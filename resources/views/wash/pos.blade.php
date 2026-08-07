@@ -291,6 +291,15 @@
                             <div id="cartItems" class="mb-3 custom-scrollbar">
                                 <p class="text-center text-muted py-4 mb-0" id="emptyCartMsg">Keranjang masih kosong</p>
                             </div>
+                            <div id="employeeMissingAlert" class="alert alert-warning py-2 px-3 mb-3 d-none">
+                                <div class="d-flex gap-2 align-items-start">
+                                    <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+                                    <div>
+                                        <div class="fw-semibold mb-1" id="employeeMissingAlertTitle">Beberapa item belum ada karyawan</div>
+                                        <div class="small" id="employeeMissingAlertBody">Komisi tidak akan dihitung untuk item tanpa karyawan. Silakan pilih karyawan per item di atas.</div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="wash-summary-row wash-summary-divider">
                                 <span>Subtotal</span>
@@ -602,6 +611,14 @@ document.addEventListener('DOMContentLoaded', function () {
         loyaltyMode: 'voucher',
         applyBonusNow: true
     };
+    window.__washCommission = {
+        requireEmployee: {{ $commissionRequireEmployee ? 'true' : 'false' }}
+    };
+    function isCommissionableType(type) {
+        if (!type) return false;
+        const t = String(type).toLowerCase();
+        return !(t === 'coffee' || t === 'caffe' || t === 'warkop' || t === 'kopi');
+    }
 
     function applyCustomerCheckData(data) {
         const info = document.getElementById('customerInfo');
@@ -1279,6 +1296,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const applyNowRadio = document.getElementById('bonusApplyNow');
         const saveLaterRadio = document.getElementById('bonusSaveForLater');
         const skipAutoRedeemInput = document.getElementById('skip_auto_redeem_voucher');
+        const missingAlert = document.getElementById('employeeMissingAlert');
+        const missingAlertTitle = document.getElementById('employeeMissingAlertTitle');
+        const missingAlertBody = document.getElementById('employeeMissingAlertBody');
         const useVoucher = voucherEl ? !!voucherEl.checked : false;
         
         cartContainer.innerHTML = '';
@@ -1287,6 +1307,8 @@ document.addEventListener('DOMContentLoaded', function () {
         let memberDiscount = 0;
         let voucherDiscount = 0;
         let instantBonusDiscount = 0;
+        let missingEmployeeCount = 0;
+        const commissionCfg = window.__washCommission || {};
         const loyalty = window.__washLoyalty || {};
         const canApplyInstantBonus = !!(
             loyalty.instantBonusEligible && !useVoucher &&
@@ -1327,25 +1349,37 @@ document.addEventListener('DOMContentLoaded', function () {
             if (emptyMsg) emptyMsg.style.display = 'none';
             if (btnCheckout) btnCheckout.disabled = false;
 
-            cart.forEach(item => {
+            cart.forEach((item, itemIdx) => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
+
+                const isCommissionable = isCommissionableType(item.type);
+                const hasEmployee = !!(item.employee_id);
+                if (isCommissionable && !hasEmployee) {
+                    missingEmployeeCount++;
+                }
                 
                 const div = document.createElement('div');
-                div.className = 'cart-item';
+                const missingEmpClass = (isCommissionable && !hasEmployee) ? ' cart-item-warning' : '';
+                div.className = 'cart-item' + missingEmpClass;
                 const selectId = 'emp_sel_' + String(item.key || item.id).replace(/[^a-zA-Z0-9_]/g, '_');
+                const empSelectClass = 'form-select form-select-sm wash-input' + ((isCommissionable && !hasEmployee) ? ' is-invalid border-warning' : '');
                 const empOptions = ['<option value=\"\">- Pegawai -</option>']
                     .concat(employees.map(e => `<option value=\"${e.id}\" ${item.employee_id==e.id?'selected':''}>${e.name}</option>`))
                     .join('');
+                const warningBadge = (isCommissionable && !hasEmployee)
+                    ? `<div class="mt-1 emp-warning-badge"><small class="text-warning fw-medium"><i class="fa-solid fa-triangle-exclamation me-1"></i>Belum pilih karyawan - komisi tidak dihitung</small></div>`
+                    : `<div class="mt-1 emp-warning-badge d-none"></div>`;
                 div.innerHTML = `
                     <div class="cart-item-left">
                         <div class="cart-item-name">${item.name}</div>
                         <small class="cart-item-meta">${item.quantity} x Rp ${item.price.toLocaleString('id-ID')}</small>
                         <div class="mt-2">
-                            <select id="${selectId}" class="form-select form-select-sm wash-input">
+                            <select id="${selectId}" data-commissionable="${isCommissionable ? '1' : '0'}" class="${empSelectClass} emp-select">
                                 ${empOptions}
                             </select>
                         </div>
+                        ${warningBadge}
                     </div>
                     <div class="cart-item-right">
                         <span class="cart-item-total">Rp ${itemTotal.toLocaleString('id-ID')}</span>
@@ -1356,12 +1390,67 @@ document.addEventListener('DOMContentLoaded', function () {
                     const sel = document.getElementById(selectId);
                     if (sel) {
                         sel.addEventListener('change', function() {
+                            const commissionable = this.dataset?.commissionable === '1';
                             item.employee_id = this.value ? parseInt(this.value) : null;
+                            const hasEmp = !!(item.employee_id);
+                            const parent = this.closest('.cart-item');
+                            const badge = parent ? parent.querySelector('.emp-warning-badge') : null;
+                            if (commissionable) {
+                                if (hasEmp) {
+                                    this.classList.remove('is-invalid', 'border-warning');
+                                    if (parent) parent.classList.remove('cart-item-warning');
+                                    if (badge) {
+                                        badge.classList.add('d-none');
+                                        badge.innerHTML = '';
+                                    }
+                                } else {
+                                    this.classList.add('is-invalid', 'border-warning');
+                                    if (parent) parent.classList.add('cart-item-warning');
+                                    if (badge) {
+                                        badge.classList.remove('d-none');
+                                        badge.innerHTML = '<small class="text-warning fw-medium"><i class="fa-solid fa-triangle-exclamation me-1"></i>Belum pilih karyawan - komisi tidak dihitung</small>';
+                                    }
+                                }
+                            }
+                            if (typeof window.__syncMissingEmpAlert === 'function') {
+                                window.__syncMissingEmpAlert();
+                            }
                         });
                     }
                 }, 0);
                 cartContainer.appendChild(div);
             });
+
+            const syncEmployeeMissingAlert = function() {
+                let miss = 0;
+                cart.forEach(it => {
+                    if (isCommissionableType(it.type) && !it.employee_id) miss++;
+                });
+                const modeStrict = !!commissionCfg.requireEmployee;
+                if (miss > 0 && missingAlert) {
+                    missingAlert.classList.remove('d-none');
+                    if (missingAlertTitle) {
+                        missingAlertTitle.textContent = (modeStrict ? '[WAJIB] ' : '') +
+                            (miss === 1 ? '1 item belum ada karyawan' : `${miss} item belum ada karyawan`);
+                    }
+                    if (missingAlertBody) {
+                        if (modeStrict) {
+                            missingAlertBody.innerHTML = `<b>Pilih karyawan untuk semua item layanan sebelum lanjut.</b> Komisi tidak akan dihitung untuk item tanpa karyawan.`;
+                            missingAlert.classList.remove('alert-warning');
+                            missingAlert.classList.add('alert-danger');
+                        } else {
+                            missingAlertBody.innerHTML = `Komisi tidak akan dihitung untuk item tanpa karyawan. Anda tetap bisa lanjut, tapi disarankan pilih karyawan per item.`;
+                            missingAlert.classList.remove('alert-danger');
+                            missingAlert.classList.add('alert-warning');
+                        }
+                    }
+                } else if (missingAlert) {
+                    missingAlert.classList.add('d-none');
+                }
+            };
+            window.__syncMissingEmpAlert = syncEmployeeMissingAlert;
+
+            syncEmployeeMissingAlert();
 
             if (currentMember && !useVoucher && !canApplyInstantBonus) {
                 const memberPct = parseFloat(currentMember.discountPercent || 0) || 0;
@@ -1512,6 +1601,26 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         
         if (cart.length === 0) return;
+
+        const commissionCfg = window.__washCommission || {};
+        let missingEmployee = 0;
+        cart.forEach(item => {
+            if (isCommissionableType(item.type) && !item.employee_id) {
+                missingEmployee++;
+            }
+        });
+        if (missingEmployee > 0) {
+            const strictMode = !!commissionCfg.requireEmployee;
+            if (strictMode) {
+                alert(`[WAJIB ISI KARYAWAN] Ada ${missingEmployee} item layanan belum dipilihkan karyawan.\n\nKomisi tidak bisa dihitung jika karyawan tidak diisi.\nSilakan pilih karyawan untuk tiap item sebelum lanjut.`);
+                return;
+            } else {
+                const confirmMsg = `⚠️ PERINGATAN KOMISI\n\nAda ${missingEmployee} item layanan BELUM dipilihkan karyawan.\n\nKaryawan Wash TIDAK AKAN mendapatkan komisi untuk item-item ini.\n\nApakah Anda yakin ingin LANJUTKAN tanpa mengisi karyawan?\n\n(OK = Lanjutkan, Batal = Perbaiki dulu)`;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+            }
+        }
 
         const method = document.getElementById('payment_method')?.value || 'cash';
         const cashInput = document.getElementById('cash_amount')?.value || 0;
@@ -2115,6 +2224,15 @@ document.addEventListener('DOMContentLoaded', function () {
         padding-bottom: 0.65rem;
         margin-bottom: 0.65rem;
         border-bottom: 1px solid #e2e8f0;
+    }
+
+    .cart-item-warning {
+        background: linear-gradient(90deg, rgba(251, 191, 36, 0.08) 0%, rgba(251, 191, 36, 0.02) 100%);
+        border: 1px solid rgba(251, 191, 36, 0.35) !important;
+        border-radius: 0.65rem;
+        padding: 0.55rem 0.6rem 0.65rem 0.6rem;
+        margin: 0 0 0.6rem 0;
+        border-left: 4px solid #f59e0b !important;
     }
 
     .cart-item:last-child {

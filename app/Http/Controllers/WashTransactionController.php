@@ -265,8 +265,9 @@ class WashTransactionController extends Controller implements HasMiddleware
         $allUsers = \App\Models\User::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $holidaySchedule = $this->resolveHolidayPricingSchedule();
         $knownVehiclePlates = $this->getKnownVehiclePlates();
+        $commissionRequireEmployee = (bool) ((int) \App\Models\Setting::getValue('wash_commission_require_employee', 0) ?: 0);
 
-        return view('wash.pos', compact('services', 'brands', 'employees', 'allUsers', 'holidaySchedule', 'knownVehiclePlates'));
+        return view('wash.pos', compact('services', 'brands', 'employees', 'allUsers', 'holidaySchedule', 'knownVehiclePlates', 'commissionRequireEmployee'));
     }
 
     public function checkCustomer(Request $request)
@@ -1143,6 +1144,16 @@ class WashTransactionController extends Controller implements HasMiddleware
             $loyaltyService->incrementOnPaidTransaction($transaction);
         }
 
+        try {
+            $commissionService = app(\App\Services\Wash\WashCommissionService::class);
+            $commissionStatus = strtolower((string) ($transaction->status ?? ''));
+            if (in_array($commissionStatus, ['lunas', 'posted'])) {
+                $commissionService->recalcForTransaction($transaction);
+            } else {
+                $commissionService->voidForTransaction($transaction, 'transaction_updated_status_' . $commissionStatus);
+            }
+        } catch (\Throwable) {}
+
         return redirect()
             ->route('wash.transactions.index', request()->query())
             ->with('success', __('Transaction updated successfully.'));
@@ -1211,6 +1222,10 @@ class WashTransactionController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($transaction) {
+            try {
+                app(\App\Services\Wash\WashCommissionService::class)->voidForTransaction($transaction, 'transaction_deleted_manual');
+            } catch (\Throwable) {}
+
             $journals = Journal::where('source_type', 'wash_transaction')
                 ->where('source_id', $transaction->id)
                 ->get();
@@ -1244,6 +1259,10 @@ class WashTransactionController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($transactions) {
             foreach ($transactions as $transaction) {
+                try {
+                    app(\App\Services\Wash\WashCommissionService::class)->voidForTransaction($transaction, 'transaction_bulk_deleted');
+                } catch (\Throwable) {}
+
                 $journals = Journal::where('source_type', 'wash_transaction')
                     ->where('source_id', $transaction->id)
                     ->get();

@@ -243,6 +243,55 @@ class SettingSeeder extends Seeder
                 'type' => 'number',
                 'label' => 'Jumlah Hari Kadaluarsa Voucher',
             ],
+            [
+                'key' => 'wash_commission_car_small_medium',
+                'value' => '13000',
+                'group' => 'wash',
+                'type' => 'number',
+                'label' => 'Komisi Mobil Kecil / Sedang (Rp)',
+            ],
+            [
+                'key' => 'wash_commission_car_large_xlarge',
+                'value' => '15000',
+                'group' => 'wash',
+                'type' => 'number',
+                'label' => 'Komisi Mobil Besar / Extra Besar (Rp)',
+            ],
+            [
+                'key' => 'wash_commission_motor_small_medium',
+                'value' => '6000',
+                'group' => 'wash',
+                'type' => 'number',
+                'label' => 'Komisi Motor Kecil / Sedang (Rp)',
+            ],
+            [
+                'key' => 'wash_commission_motor_large_xlarge',
+                'value' => '8000',
+                'group' => 'wash',
+                'type' => 'number',
+                'label' => 'Komisi Motor Besar / Extra Besar (Rp)',
+            ],
+            [
+                'key' => 'wash_commission_exclude_free_wash',
+                'value' => '1',
+                'group' => 'wash',
+                'type' => 'boolean',
+                'label' => 'Tidak Berikan Komisi untuk Cuci Gratis / Voucher',
+            ],
+            [
+                'key' => 'wash_commission_only_main_services',
+                'value' => '1',
+                'group' => 'wash',
+                'type' => 'boolean',
+                'label' => 'Hanya Hitung Komisi untuk Layanan Utama (Bukan Addon)',
+            ],
+            [
+                'key' => 'wash_commission_require_employee',
+                'value' => '0',
+                'group' => 'wash',
+                'type' => 'boolean',
+                'label' => 'Wajib Pilih Karyawan per Item di POS',
+            ],
         ];
 
         foreach ($settings as $setting) {

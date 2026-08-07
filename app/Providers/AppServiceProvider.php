@@ -10,12 +10,14 @@ use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WashEmployee;
+use App\Models\WashTransaction;
 use App\Observers\CustomerObserver;
 use App\Observers\EmployeeObserver;
 use App\Observers\InstallationObserver;
 use App\Observers\TicketObserver;
 use App\Observers\UserObserver;
 use App\Observers\WashEmployeeObserver;
+use App\Observers\WashTransactionObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -176,6 +178,14 @@ class AppServiceProvider extends ServiceProvider
 
             if ($hasWashEmployeesTable) {
                 WashEmployee::observe(WashEmployeeObserver::class);
+            }
+
+            $hasWashTransactionsTable = Cache::rememberForever('has_wash_transactions_table', function () {
+                return Schema::hasTable('wash_transactions');
+            });
+
+            if ($hasWashTransactionsTable) {
+                WashTransaction::observe(WashTransactionObserver::class);
             }
         } catch (\Exception $e) {
             // Silently fail if table doesn't exist yet

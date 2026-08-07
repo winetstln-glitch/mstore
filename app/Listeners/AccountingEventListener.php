@@ -98,6 +98,17 @@ class AccountingEventListener
         }
 
         $washTransaction->syncAccountingJournal();
+
+        try {
+            if (class_exists(\App\Services\Wash\WashCommissionService::class)) {
+                app(\App\Services\Wash\WashCommissionService::class)->calculateAndStoreForTransaction($washTransaction);
+            }
+        } catch (\Throwable $e) {
+            Log::error('AccountingEventListener WashCommission calculation failed', [
+                'transaction_id' => $washTransaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

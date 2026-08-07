@@ -124,6 +124,95 @@
 
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary text-uppercase mb-3">
+                            <i class="fa-solid fa-hand-holding-dollar me-1"></i> Tarif Komisi Karyawan Wash
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="small text-muted mb-2">
+                                    Tarif komisi per item layanan (dalam Rupiah) berdasarkan jenis kendaraan dan ukuran.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-secondary">
+                                            <i class="fa-solid fa-car me-1"></i> Mobil (Car)
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label for="wash_commission_car_small_medium" class="form-label fw-medium">Kecil &amp; Sedang (Small/Medium)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white">Rp</span>
+                                                <input type="number" min="0" class="form-control" id="wash_commission_car_small_medium" name="wash_commission_car_small_medium" value="{{ \App\Models\Setting::getValue('wash_commission_car_small_medium', '13000') }}">
+                                            </div>
+                                            <div class="small text-muted mt-1">Contoh: Avanza, Xenia, Vios, Jazz, dll.</div>
+                                        </div>
+                                        <div>
+                                            <label for="wash_commission_car_large_xlarge" class="form-label fw-medium">Besar &amp; Extra Besar (Large/XL)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white">Rp</span>
+                                                <input type="number" min="0" class="form-control" id="wash_commission_car_large_xlarge" name="wash_commission_car_large_xlarge" value="{{ \App\Models\Setting::getValue('wash_commission_car_large_xlarge', '15000') }}">
+                                            </div>
+                                            <div class="small text-muted mt-1">Contoh: Fortuner, Pajero, Alphard, Innova, dll.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="fw-bold mb-3 text-secondary">
+                                            <i class="fa-solid fa-motorcycle me-1"></i> Motor (Motorcycle)
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label for="wash_commission_motor_small_medium" class="form-label fw-medium">Kecil &amp; Sedang (Small/Medium)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white">Rp</span>
+                                                <input type="number" min="0" class="form-control" id="wash_commission_motor_small_medium" name="wash_commission_motor_small_medium" value="{{ \App\Models\Setting::getValue('wash_commission_motor_small_medium', '6000') }}">
+                                            </div>
+                                            <div class="small text-muted mt-1">Contoh: Beat, Mio, Vario 125, Supra X, dll.</div>
+                                        </div>
+                                        <div>
+                                            <label for="wash_commission_motor_large_xlarge" class="form-label fw-medium">Besar &amp; Extra Besar (Large/XL)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white">Rp</span>
+                                                <input type="number" min="0" class="form-control" id="wash_commission_motor_large_xlarge" name="wash_commission_motor_large_xlarge" value="{{ \App\Models\Setting::getValue('wash_commission_motor_large_xlarge', '8000') }}">
+                                            </div>
+                                            <div class="small text-muted mt-1">Contoh: NMAX, PCX, XMAX, Aerox, Ninja, Harley, dll.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="hidden" name="wash_commission_exclude_free_wash" value="0">
+                                    <input class="form-check-input" type="checkbox" value="1" id="wash_commission_exclude_free_wash" name="wash_commission_exclude_free_wash" {{ \App\Models\Setting::getValue('wash_commission_exclude_free_wash', '1') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="wash_commission_exclude_free_wash">Jangan hitung komisi untuk cuci gratis (Rp 0)</label>
+                                </div>
+                                <div class="small text-muted mt-1 ms-4">Transaksi gratis/total Rp 0 tidak menghasilkan komisi.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="hidden" name="wash_commission_only_main_services" value="0">
+                                    <input class="form-check-input" type="checkbox" value="1" id="wash_commission_only_main_services" name="wash_commission_only_main_services" {{ \App\Models\Setting::getValue('wash_commission_only_main_services', '1') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="wash_commission_only_main_services">Hanya layanan utama (main services)</label>
+                                </div>
+                                <div class="small text-muted mt-1 ms-4">Hanya layanan kategori "main" yang dihitung komisi.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="hidden" name="wash_commission_require_employee" value="0">
+                                    <input class="form-check-input" type="checkbox" value="1" id="wash_commission_require_employee" name="wash_commission_require_employee" {{ \App\Models\Setting::getValue('wash_commission_require_employee', '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-medium" for="wash_commission_require_employee">Wajib pilih karyawan per item</label>
+                                </div>
+                                <div class="small text-muted mt-1 ms-4">Jika aktif, tampilkan peringatan di POS jika item tanpa karyawan.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary text-uppercase mb-3">
                             <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Harga Hari Raya
                         </h6>
                         <div class="row g-3">
