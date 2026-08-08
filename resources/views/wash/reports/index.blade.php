@@ -179,30 +179,56 @@ body #page-content-wrapper .wash-reports-page > div.card,
 /* ===== STAT CARD SUMMARY (4 card atas) ===== */
 #page-content-wrapper .wash-reports-page .stat-card-summary.card {
     border: 1px solid rgba(148,163,184,0.18) !important;
+    min-height: 100% !important;
 }
 #page-content-wrapper .wash-reports-page .stat-card-summary .card-body {
-    padding: 1rem 1.05rem !important;
+    padding: 1.1rem 1.2rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    height: 100% !important;
+    gap: 0.75rem !important;
+}
+#page-content-wrapper .wash-reports-page .stat-card-summary .card-body > .d-flex {
+    gap: 0.85rem !important;
+    align-items: center !important;
+}
+#page-content-wrapper .wash-reports-page .stat-card-summary .card-body > .d-flex > div:first-child {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
 }
 #page-content-wrapper .wash-reports-page .stat-card-summary .display-6 {
-    font-size: clamp(1.35rem, 2.1vw, 2.2rem) !important;
+    font-size: clamp(1.3rem, 1.95vw, 2rem) !important;
     font-weight: 800 !important;
-    line-height: 1.15 !important;
-    letter-spacing: -0.01em;
+    line-height: 1.25 !important;
+    letter-spacing: -0.005em;
+    word-break: keep-all !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    margin-top: 0.3rem !important;
+    display: block !important;
 }
 #page-content-wrapper .wash-reports-page .stat-card-summary .small.text-uppercase {
-    font-size: 0.78rem !important;
-    letter-spacing: 0.06em !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.055em !important;
     font-weight: 700 !important;
+    display: block !important;
+    margin-bottom: 0.1rem !important;
+    line-height: 1.3 !important;
 }
 #page-content-wrapper .wash-reports-page .stat-card-summary .small.text-muted {
     font-size: 0.82rem !important;
+    line-height: 1.4 !important;
+    margin-top: auto !important;
+    padding-top: 0.1rem !important;
 }
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-success.rounded-pill,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill {
-    width: 40px !important;
-    height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -214,15 +240,63 @@ body #page-content-wrapper .wash-reports-page > div.card,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill i,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill i,
 #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill i {
-    font-size: 1.05rem !important;
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+}
+
+@media (max-width: 991.98px) {
+    #page-content-wrapper .wash-reports-page .stat-card-summary .display-6 {
+        font-size: clamp(1.15rem, 2.6vw, 1.7rem) !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .card-body {
+        padding: 0.95rem 1rem !important;
+        gap: 0.65rem !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-success.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-success.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill i {
+        font-size: 1rem !important;
+    }
 }
 
 @media (max-width: 575.98px) {
     #page-content-wrapper .wash-reports-page .stat-card-summary .display-6 {
-        font-size: 1.25rem !important;
+        font-size: clamp(1.35rem, 5.8vw, 1.85rem) !important;
+        white-space: normal !important;
+        line-height: 1.2 !important;
     }
     #page-content-wrapper .wash-reports-page .stat-card-summary .card-body {
-        padding: 0.9rem !important;
+        padding: 1rem 1.05rem !important;
+        gap: 0.75rem !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .card-body > .d-flex {
+        gap: 0.9rem !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-success.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-success.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-danger.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-warning.rounded-pill i,
+    #page-content-wrapper .wash-reports-page .stat-card-summary .bg-primary.rounded-pill i {
+        font-size: 1.2rem !important;
+    }
+    #page-content-wrapper .wash-reports-page .stat-card-summary .small.text-muted {
+        font-size: 0.85rem !important;
     }
 }
 
@@ -533,16 +607,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-success bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-success opacity-75">Pemasukan</div>
-                                            <div class="display-6 fw-bold text-success mt-1">Rp {{ number_format($dailyIncome,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-success">Rp {{ number_format($dailyIncome,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-success rounded-pill p-2">
-                                            <i class="bi bi-cash-stack text-white fs-4"></i>
+                                        <div class="bg-success rounded-pill">
+                                            <i class="bi bi-cash-stack text-white"></i>
                                         </div>
                                     </div>
-                                    <div class="small text-muted mt-2">
+                                    <div class="small text-muted">
                                         <i class="bi bi-receipt me-1"></i>{{ $dailyTrxCount }} transaksi
                                     </div>
                                 </div>
@@ -552,16 +626,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-danger bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-danger opacity-75">Pengeluaran</div>
-                                            <div class="display-6 fw-bold text-danger mt-1">Rp {{ number_format($dailyExpense,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-danger">Rp {{ number_format($dailyExpense,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-danger rounded-pill p-2">
-                                            <i class="bi bi-bag-dash text-white fs-4"></i>
+                                        <div class="bg-danger rounded-pill">
+                                            <i class="bi bi-bag-dash text-white"></i>
                                         </div>
                                     </div>
-                                    <div class="small text-muted mt-2">
+                                    <div class="small text-muted">
                                         <i class="bi bi-receipt-cutoff me-1"></i>{{ $dailyExpCount }} item
                                     </div>
                                 </div>
@@ -571,16 +645,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-warning bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-warning opacity-75">Potongan Komisi</div>
-                                            <div class="display-6 fw-bold text-warning mt-1">- Rp {{ number_format($dailyCommission,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-warning">- Rp {{ number_format($dailyCommission,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-warning rounded-pill p-2">
-                                            <i class="bi bi-people-fill text-white fs-4"></i>
+                                        <div class="bg-warning rounded-pill">
+                                            <i class="bi bi-people-fill text-white"></i>
                                         </div>
                                     </div>
-                                    <div class="small text-muted mt-2">
+                                    <div class="small text-muted">
                                         <i class="bi bi-person-check me-1"></i>{{ $dailyCommissionEmpCount }} karyawan &bull; {{ $dailyCommissionItemCount }} item
                                     </div>
                                 </div>
@@ -590,16 +664,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm {{ $dailyTotalNetProfit >= 0 ? 'bg-primary bg-opacity-10' : 'bg-danger bg-opacity-10' }}">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold opacity-75 {{ $dailyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Laba Bersih</div>
-                                            <div class="display-6 fw-bold mt-1 {{ $dailyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Rp {{ number_format($dailyTotalNetProfit,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold {{ $dailyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Rp {{ number_format($dailyTotalNetProfit,0,',','.') }}</div>
                                         </div>
-                                        <div class="rounded-pill p-2 {{ $dailyTotalNetProfit >= 0 ? 'bg-primary' : 'bg-danger' }}">
-                                            <i class="bi {{ $dailyTotalNetProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow' }} text-white fs-4"></i>
+                                        <div class="rounded-pill {{ $dailyTotalNetProfit >= 0 ? 'bg-primary' : 'bg-danger' }}">
+                                            <i class="bi {{ $dailyTotalNetProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow' }} text-white"></i>
                                         </div>
                                     </div>
-                                    <div class="small text-muted mt-2">
+                                    <div class="small text-muted">
                                         <strong>Laba Kotor:</strong> Rp {{ number_format($dailyLabaKotor,0,',','.') }}
                                     </div>
                                 </div>
@@ -1082,12 +1156,12 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-success bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-success opacity-75">Pemasukan</div>
-                                            <div class="display-6 fw-bold text-success mt-1">Rp {{ number_format($monthlyIncome,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-success rounded-pill p-2"><i class="bi bi-cash-stack text-white fs-4"></i></div>
+                                        <div class="bg-success rounded-pill"><i class="bi bi-cash-stack text-white"></i></div>
                                     </div>
                                 </div>
                             </div>
@@ -1095,12 +1169,12 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-danger bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-danger opacity-75">Pengeluaran</div>
-                                            <div class="display-6 fw-bold text-danger mt-1">Rp {{ number_format($monthlyExpense,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-danger">Rp {{ number_format($monthlyExpense,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-danger rounded-pill p-2"><i class="bi bi-bag-dash text-white fs-4"></i></div>
+                                        <div class="bg-danger rounded-pill"><i class="bi bi-bag-dash text-white"></i></div>
                                     </div>
                                 </div>
                             </div>
@@ -1108,12 +1182,12 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm bg-warning bg-opacity-10">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold text-warning opacity-75">Potongan Komisi</div>
-                                            <div class="display-6 fw-bold text-warning mt-1">- Rp {{ number_format($monthlyCommission,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold text-warning">- Rp {{ number_format($monthlyCommission,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-warning rounded-pill p-2"><i class="bi bi-people-fill text-white fs-4"></i></div>
+                                        <div class="bg-warning rounded-pill"><i class="bi bi-people-fill text-white"></i></div>
                                     </div>
                                 </div>
                             </div>
@@ -1121,16 +1195,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-3">
                             <div class="card stat-card-summary h-100 border-0 shadow-sm {{ $monthlyTotalNetProfit >= 0 ? 'bg-primary bg-opacity-10' : 'bg-danger bg-opacity-10' }}">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex">
                                         <div>
                                             <div class="small text-uppercase fw-bold opacity-75 {{ $monthlyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Laba Bersih Akhir</div>
-                                            <div class="display-6 fw-bold mt-1 {{ $monthlyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Rp {{ number_format($monthlyTotalNetProfit,0,',','.') }}</div>
+                                            <div class="display-6 fw-bold {{ $monthlyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Rp {{ number_format($monthlyTotalNetProfit,0,',','.') }}</div>
                                         </div>
-                                        <div class="rounded-pill p-2 {{ $monthlyTotalNetProfit >= 0 ? 'bg-primary' : 'bg-danger' }}">
-                                            <i class="bi {{ $monthlyTotalNetProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow' }} text-white fs-4"></i>
+                                        <div class="rounded-pill {{ $monthlyTotalNetProfit >= 0 ? 'bg-primary' : 'bg-danger' }}">
+                                            <i class="bi {{ $monthlyTotalNetProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow' }} text-white"></i>
                                         </div>
                                     </div>
-                                    <div class="small text-muted mt-2">
+                                    <div class="small text-muted">
                                         <strong>Laba Kotor:</strong> Rp {{ number_format($monthlyLabaKotor,0,',','.') }}
                                     </div>
                                 </div>
