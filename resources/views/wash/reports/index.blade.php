@@ -612,9 +612,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             <div class="small text-uppercase fw-bold text-success opacity-75">Pemasukan</div>
                                             <div class="display-6 fw-bold text-success">Rp {{ number_format($dailyIncome,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-success rounded-pill">
-                                            <i class="bi bi-cash-stack text-white"></i>
-                                        </div>
                                     </div>
                                     <div class="small text-muted">
                                         <i class="bi bi-receipt me-1"></i>{{ $dailyTrxCount }} transaksi
@@ -630,9 +627,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                         <div>
                                             <div class="small text-uppercase fw-bold text-danger opacity-75">Pengeluaran</div>
                                             <div class="display-6 fw-bold text-danger">Rp {{ number_format($dailyExpense,0,',','.') }}</div>
-                                        </div>
-                                        <div class="bg-danger rounded-pill">
-                                            <i class="bi bi-bag-dash text-white"></i>
                                         </div>
                                     </div>
                                     <div class="small text-muted">
@@ -650,9 +644,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             <div class="small text-uppercase fw-bold text-warning opacity-75">Potongan Komisi</div>
                                             <div class="display-6 fw-bold text-warning">- Rp {{ number_format($dailyCommission,0,',','.') }}</div>
                                         </div>
-                                        <div class="bg-warning rounded-pill">
-                                            <i class="bi bi-people-fill text-white"></i>
-                                        </div>
                                     </div>
                                     <div class="small text-muted">
                                         <i class="bi bi-person-check me-1"></i>{{ $dailyCommissionEmpCount }} karyawan &bull; {{ $dailyCommissionItemCount }} item
@@ -668,9 +659,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                         <div>
                                             <div class="small text-uppercase fw-bold opacity-75 {{ $dailyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Laba Bersih</div>
                                             <div class="display-6 fw-bold {{ $dailyTotalNetProfit >= 0 ? 'text-primary' : 'text-danger' }}">Rp {{ number_format($dailyTotalNetProfit,0,',','.') }}</div>
-                                        </div>
-                                        <div class="rounded-pill {{ $dailyTotalNetProfit >= 0 ? 'bg-primary' : 'bg-danger' }}">
-                                            <i class="bi {{ $dailyTotalNetProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow' }} text-white"></i>
                                         </div>
                                     </div>
                                     <div class="small text-muted">
@@ -778,12 +766,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                             $dailySetoranCash = $dailyCash - (float) $dailyExpense;
                             $dailySetoranCashBersih = $dailyCash - (float) $dailyExpense - (float) $dailyCommission;
                             $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => str_starts_with(strtolower(trim((string) ($r->notes ?? ''))), 'bonus_cuci'))->count();
+                            $dailySvcTotal = (float) $dailyByService->sum('amount');
+                            $dailySvcDiff = (float) $dailyIncome - $dailySvcTotal;
+                            $dailyDiscountTotal = (float) $dailyIncomeRows->sum('discount_amount');
                         @endphp
                         <!-- Breakdown Layanan -->
                         <div class="col-md-6">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-header bg-info bg-opacity-25 fw-semibold py-2">
                                     <i class="bi bi-list-check me-1"></i> Data per Layanan
+                                    <span class="small text-muted fw-normal float-end mt-1">(berdasarkan item transaksi)</span>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm align-middle mb-0">
@@ -799,6 +791,36 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             <tr><td colspan="3" class="text-center text-muted py-3">-</td></tr>
                                             @endforelse
                                         </tbody>
+                                        <tfoot>
+                                            <tr class="table-secondary fw-bold">
+                                                <td>Total Sesuai Item Layanan</td>
+                                                <td class="text-end">{{ number_format($dailyByService->sum('total_qty'),0,',','.') }}</td>
+                                                <td class="text-end">Rp {{ number_format($dailySvcTotal,0,',','.') }}</td>
+                                            </tr>
+                                            @if($dailySvcDiff != 0 || $dailyDiscountTotal > 0)
+                                            <tr class="table-danger fw-semibold">
+                                                <td>
+                                                    <i class="bi bi-dash-circle me-1"></i>Diskon / Penyesuaian
+                                                    @if($dailyDiscountTotal > 0)
+                                                    <span class="small text-muted fw-normal d-block">(Total Diskon: Rp {{ number_format($dailyDiscountTotal,0,',','.') }})</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end">Rp {{ $dailySvcDiff >= 0 ? '+' : '' }}{{ number_format($dailySvcDiff,0,',','.') }}</td>
+                                            </tr>
+                                            <tr class="table-success fw-bold">
+                                                <td><i class="bi bi-check-circle me-1"></i> Total Pemasukan (cocok dengan card atas)</td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end text-success">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
+                                            </tr>
+                                            @else
+                                            <tr class="table-success fw-bold">
+                                                <td><i class="bi bi-check-circle me-1"></i> Total Pemasukan (cocok dengan card atas)</td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end text-success">Rp {{ number_format($dailyIncome,0,',','.') }}</td>
+                                            </tr>
+                                            @endif
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -826,6 +848,10 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             @empty
                                             <tr><td colspan="2" class="text-center text-muted py-3">-</td></tr>
                                             @endforelse
+                                            <tr class="table-secondary fw-bold">
+                                                <td><i class="bi bi-check-all me-1"></i>Total (cocok dengan Pemasukan)</td>
+                                                <td class="text-end">Rp {{ number_format($dailyByPayment->sum('amount'),0,',','.') }}</td>
+                                            </tr>
                                             <tr class="table-warning">
                                                 <td class="fw-semibold"><i class="bi bi-wallet2 me-1"></i>Setoran Cash (Cash - Pengeluaran)</td>
                                                 <td class="text-end fw-bold {{ $dailySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($dailySetoranCash,0,',','.') }}</td>
@@ -1254,27 +1280,30 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         <div class="col-md-4">
                             <div class="card member-stat-card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-person-vcard text-info fs-2 mb-2"></i>
+                                    <i class="bi bi-person-vcard text-info mb-2"></i>
                                     <div class="display-6 fw-bold">{{ number_format($memberActiveCount ?? 0, 0, ',', '.') }}</div>
                                     <div class="small text-muted text-uppercase fw-bold">Member Aktif</div>
+                                    <div class="small text-muted">Terdaftar di sistem</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card member-stat-card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-person-plus-fill text-success fs-2 mb-2"></i>
+                                    <i class="bi bi-person-plus-fill text-success mb-2"></i>
                                     <div class="display-6 fw-bold">{{ number_format($memberNewMonthlyCount ?? 0, 0, ',', '.') }}</div>
                                     <div class="small text-muted text-uppercase fw-bold">Member Baru Bulan Ini</div>
+                                    <div class="small text-muted">Tambahan member bulan ini</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card member-stat-card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-ticket-perforated-fill text-warning fs-2 mb-2"></i>
+                                    <i class="bi bi-ticket-perforated-fill text-warning mb-2"></i>
                                     <div class="display-6 fw-bold">{{ number_format($monthlyRewardRedemptionCount ?? 0, 0, ',', '.') }}</div>
                                     <div class="small text-muted text-uppercase fw-bold">Reward Dipakai</div>
+                                    <div class="small text-muted">Total penukaran voucher</div>
                                 </div>
                             </div>
                         </div>
@@ -1342,10 +1371,15 @@ body #page-content-wrapper .wash-reports-page > div.card,
                             $monthlyTransfer = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
                             $monthlySetoranCash = $monthlyCash - (float) $monthlyExpense;
                             $monthlySetoranCashBersih = $monthlyCash - (float) $monthlyExpense - (float) $monthlyCommission;
+                            $monthlySvcTotal = (float) $monthlyByService->sum('amount');
+                            $monthlySvcDiff = (float) $monthlyIncome - $monthlySvcTotal;
                         @endphp
                         <div class="col-md-6">
                             <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-info bg-opacity-25 fw-semibold py-2"><i class="bi bi-list-check me-1"></i> Statistik per Layanan</div>
+                                <div class="card-header bg-info bg-opacity-25 fw-semibold py-2">
+                                    <i class="bi bi-list-check me-1"></i> Statistik per Layanan
+                                    <span class="small text-muted fw-normal float-end mt-1">(berdasarkan item transaksi)</span>
+                                </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm align-middle mb-0">
                                         <thead class="table-light"><tr><th>Layanan</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
@@ -1355,6 +1389,31 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             @empty<tr><td colspan="3" class="text-center text-muted py-3">-</td></tr>
                                             @endforelse
                                         </tbody>
+                                        <tfoot>
+                                            <tr class="table-secondary fw-bold">
+                                                <td>Total Sesuai Item Layanan</td>
+                                                <td class="text-end">{{ number_format($monthlyByService->sum('total_qty'),0,',','.') }}</td>
+                                                <td class="text-end">Rp {{ number_format($monthlySvcTotal,0,',','.') }}</td>
+                                            </tr>
+                                            @if($monthlySvcDiff != 0)
+                                            <tr class="table-danger fw-semibold">
+                                                <td><i class="bi bi-dash-circle me-1"></i>Diskon / Penyesuaian</td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end">Rp {{ $monthlySvcDiff >= 0 ? '+' : '' }}{{ number_format($monthlySvcDiff,0,',','.') }}</td>
+                                            </tr>
+                                            <tr class="table-success fw-bold">
+                                                <td><i class="bi bi-check-circle me-1"></i> Total Pemasukan (cocok dengan card atas)</td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</td>
+                                            </tr>
+                                            @else
+                                            <tr class="table-success fw-bold">
+                                                <td><i class="bi bi-check-circle me-1"></i> Total Pemasukan (cocok dengan card atas)</td>
+                                                <td class="text-end"></td>
+                                                <td class="text-end text-success">Rp {{ number_format($monthlyIncome,0,',','.') }}</td>
+                                            </tr>
+                                            @endif
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -1378,6 +1437,10 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                             </tr>
                                             @empty<tr><td colspan="2" class="text-center text-muted py-3">-</td></tr>
                                             @endforelse
+                                            <tr class="table-secondary fw-bold">
+                                                <td><i class="bi bi-check-all me-1"></i>Total (cocok dengan Pemasukan)</td>
+                                                <td class="text-end">Rp {{ number_format($monthlyByPayment->sum('amount'),0,',','.') }}</td>
+                                            </tr>
                                             <tr class="table-warning"><td class="fw-semibold"><i class="bi bi-wallet2 me-1"></i>Setoran Cash (Cash - Pengeluaran)</td><td class="text-end fw-bold {{ $monthlySetoranCash < 0 ? 'text-danger' : '' }}">Rp {{ number_format($monthlySetoranCash,0,',','.') }}</td></tr>
                                             <tr class="table-primary"><td class="fw-semibold"><i class="bi bi-wallet-fill me-1"></i>Setoran Cash BERSIH (- Komisi)</td><td class="text-end fw-bold {{ $monthlySetoranCashBersih < 0 ? 'text-danger' : 'text-primary' }}">Rp {{ number_format($monthlySetoranCashBersih,0,',','.') }}</td></tr>
                                         </tbody>
