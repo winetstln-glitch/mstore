@@ -20,7 +20,9 @@ return new class extends Migration
             $table->unsignedBigInteger('total_earned')->default(0);
             $table->string('status', 32)->default('earned')->index()->comment('earned/paid/voided');
             $table->timestamp('paid_at')->nullable();
-            $table->nullableMorphs('paid_reference');
+            $table->string('paid_reference_type', 191)->nullable();
+            $table->unsignedBigInteger('paid_reference_id')->nullable();
+            $table->index(['paid_reference_type', 'paid_reference_id'], 'wce_paid_ref_type_id_idx');
             $table->text('notes')->nullable();
             $table->timestamps();
 
