@@ -18,6 +18,20 @@ class WashCommissionService
         protected AuditLogService $auditLog,
     ) {}
 
+    protected function hasCommissionTable(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $cached = Schema::hasTable('wash_commission_earnings');
+        } catch (\Throwable) {
+            $cached = false;
+        }
+        return (bool) $cached;
+    }
+
     public function setting(string $key, $default = null)
     {
         try {
@@ -86,26 +100,23 @@ class WashCommissionService
     {
         $srv = $service ?? ($item->service ?? null);
 
-        // Filter berdasarkan kategori layanan (jika hanya main services)
-        if ($this->isOnlyMainServices() && $srv && $srv->category !== 'main') {
+        if ($this->isOnlyMainServices() && $srv && (string) $srv->service_category !== 'main') {
             return true;
         }
 
-        // Filter free wash (total = 0) bila diaktifkan
         if ($this->isExcludeFreeWash() && (int) ($transaction->total_amount ?? 0) <= 0) {
             return true;
         }
 
-        // Tidak ada karyawan → skip (tidak error, cuma tidak ada yang dapat komisi)
         if (empty($item->employee_id)) {
             return true;
         }
 
-        // Kopi / warkop tidak pernah dapat komisi
         if ($srv && ($srv->vehicle_type === 'coffee' || $srv->vehicle_type === '' || $srv->vehicle_type === null)) {
             return true;
         }
-        if (! $srv && ($item->name !== null) && stripos($item->name, 'kopi') !== false) {
+        $itemServiceName = (string) ($item->service_name ?? '');
+        if (! $srv && ($itemServiceName === '' || stripos($itemServiceName, 'kopi') !== false || stripos($itemServiceName, 'caffe') !== false || stripos($itemServiceName, 'warkop') !== false)) {
             return true;
         }
 
@@ -114,7 +125,7 @@ class WashCommissionService
 
     public function calculateAndStoreForTransaction(WashTransaction $transaction): array
     {
-        if (! Schema::hasTable('wash_commission_earnings')) {
+        if (! $this->hasCommissionTable()) {
             return ['success' => false, 'message' => 'wash_commission_earnings table not found'];
         }
 
@@ -224,7 +235,7 @@ class WashCommissionService
 
     public function voidForTransaction(WashTransaction $transaction, string $reason = 'transaction_updated'): int
     {
-        if (! Schema::hasTable('wash_commission_earnings')) {
+        if (! $this->hasCommissionTable()) {
             return 0;
         }
         $txId = $transaction->id;
@@ -260,27 +271,43 @@ class WashCommissionService
 
     public function summaryForEmployee(WashEmployee|int $employee, ?string $startDate = null, ?string $endDate = null, array $statusFilter = null): array
     {
-        $empId = $employee instanceof WashEmployee ? $employee->id : (int) $employee;
-        $query = WashCommissionEarning::query()->where('wash_employee_id', $empId);
-
-        if ($statusFilter !== null && count($statusFilter) > 0) {
-            $query->whereIn('status', $statusFilter);
-        }
-        if ($startDate) {
-            $query->whereDate('created_at', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->whereDate('created_at', '<=', $endDate);
+        if (! $this->hasCommissionTable()) {
+            return [
+                'rows' => collect(),
+                'count' => 0,
+                'total' => 0,
+            ];
         }
 
-        $rows = $query->with('transaction', 'transactionItem')->orderByDesc('id')->get();
-        $total = (int) $rows->sum('total_earned');
-        $count = $rows->count();
+        try {
+            $empId = $employee instanceof WashEmployee ? $employee->id : (int) $employee;
+            $query = WashCommissionEarning::query()->where('wash_employee_id', $empId);
 
-        return [
-            'rows' => $rows,
-            'count' => $count,
-            'total' => $total,
-        ];
+            if ($statusFilter !== null && count($statusFilter) > 0) {
+                $query->whereIn('status', $statusFilter);
+            }
+            if ($startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
+            }
+
+            $rows = $query->with('transaction', 'transactionItem')->orderByDesc('id')->get();
+            $total = (int) $rows->sum('total_earned');
+            $count = $rows->count();
+
+            return [
+                'rows' => $rows,
+                'count' => $count,
+                'total' => $total,
+            ];
+        } catch (\Throwable) {
+            return [
+                'rows' => collect(),
+                'count' => 0,
+                'total' => 0,
+            ];
+        }
     }
 }
