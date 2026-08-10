@@ -52,10 +52,39 @@
 
     <div class="card create-panel shadow-sm border-0">
         <div class="card-body p-4">
-            <form method="POST" action="{{ isset($expense) ? route('wash.expenses.update', $expense->id) : route('wash.expenses.store') }}" id="createExpenseForm">
+            <form method="POST" action="{{ isset($expense) ? route('wash.expenses.update', $expense->id) : route('wash.expenses.store') }}" id="createExpenseForm" novalidate>
                 @csrf
                 @if(isset($expense))
                     @method('PUT')
+                @endif
+
+                {{-- Error Summary --}}
+                @if($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                        <h6 class="alert-heading fw-semibold mb-2">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>Terdapat kesalahan input:
+                        </h6>
+                        <ul class="mb-0 ps-3 small">
+                            @foreach($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                        <i class="fa-solid fa-circle-xmark me-2"></i>{{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                        <i class="fa-solid fa-circle-check me-2"></i>{{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 @endif
 
                 <div class="row g-4">
@@ -398,15 +427,69 @@
             }
         }
 
-        // 6. Prevent double submit
+        // 6. Submit handler with proper validation + anti-double submit
+        function setBtnLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+            if (btnText) btnText.classList.toggle('d-none', isLoading);
+            if (btnLoading) btnLoading.classList.toggle('d-none', !isLoading);
+        }
+
         form.addEventListener('submit', function(e) {
+            // 1. Pastikan amount di-sync dulu SEBELUM validasi
+            const selOption = expenseGroupSelect.options[expenseGroupSelect.selectedIndex];
+            const isStock = selOption && selOption.dataset.isStock === '1';
+            if (isStock) {
+                calculateStockAmount();
+            } else {
+                handleManualAmountInput();
+                // Pastikan non-stok amount tidak 0
+                const amt = parseFloat(amountInput.value || '0');
+                if (!isFinite(amt) || amt <= 0) {
+                    amountInput.value = ''; // biar validasi numeric:min gagal & kasih error jelas
+                }
+            }
+
+            // 2. Cek HTML5 form validity (required fields, type match)
+            if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                e.preventDefault();
+                if (typeof form.reportValidity === 'function') {
+                    form.reportValidity();
+                } else {
+                    alert('Mohon lengkapi semua field yang wajib diisi.');
+                }
+                setBtnLoading(false);
+                return false;
+            }
+
+            // 3. Second layer check: amount tidak boleh 0 / NaN (untuk berjaga-jaga)
+            const finalAmount = parseFloat(amountInput.value || '0');
+            if (!isFinite(finalAmount) || finalAmount <= 0) {
+                e.preventDefault();
+                alert('❌ Nominal pengeluaran harus diisi dan lebih besar dari Rp 0.\n\nJika field Nominal terlihat abu-abu / tidak bisa diketik:\n→ Pilih kategori terlebih dahulu (Uang Makan/Insentif/Lembur/Lainnya) agar field aktif.');
+                setBtnLoading(false);
+                amountDisplay.focus();
+                return false;
+            }
+
+            // 4. Cegah double submit: disable button
             if (submitBtn.disabled) {
                 e.preventDefault();
-                return;
+                return false;
             }
-            submitBtn.disabled = true;
-            submitBtn.querySelector('.btn-text').classList.add('d-none');
-            submitBtn.querySelector('.btn-loading').classList.remove('d-none');
+            setBtnLoading(true);
+
+            // 5. FALLBACK: jika setelah 45 detik tidak ada respon (server error / timeout), aktifkan kembali
+            setTimeout(function() {
+                if (submitBtn.disabled) {
+                    setBtnLoading(false);
+                    console.warn('[Warn] Submit timeout - tombol diaktifkan kembali. Coba submit ulang atau cek koneksi.');
+                }
+            }, 45000);
+
+            // 6. Untuk non-AJAX form submit: biarkan browser submit normal
+            return true;
         });
 
         // Event listeners
@@ -418,10 +501,19 @@
         amountInput.addEventListener('input', updateAmountDisplay);
 
         // Initialize
-        updateAmountDisplay();
-        if (isStockCategory) {
-            updateStockPreview();
+        // ⚠️ Jika halaman reload karena validasi error → old('amount') mungkin sudah berisi number → sync ke display
+        if (amountInput.value) {
+            updateAmountDisplay();
         }
+        if (isStockCategory) {
+            calculateStockAmount();
+            updateStockPreview();
+        } else {
+            handleManualAmountInput();
+        }
+
+        // Pastikan tombol submit TIDAK disabled pada load pertama
+        setBtnLoading(false);
     });
 </script>
 @endpush

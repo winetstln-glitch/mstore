@@ -172,20 +172,28 @@ class WashExpenseController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'transaction_date' => 'required|date',
-            'amount' => 'required|numeric|min:0',
+            'expense_group' => 'nullable|in:shampoo,snack,caffe,uang_makan,insentif,lembur,lainnya',
+            'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
         ]);
+
+        $amount = (float) ($data['amount'] ?? 0);
+        $group = $data['expense_group'] ?? 'lainnya';
+        $categoryLabel = $this->getCategoryLabel($group);
 
         $reference = 'WASH-EXP-' . now()->format('YmdHis') . Str::upper(Str::random(3));
         Transaction::create([
             'user_id' => Auth::id(),
             'type' => 'expense',
-            'category' => 'Pengeluaran Pengurus',
-            'amount' => $data['amount'],
+            'category' => $categoryLabel,
+            'expense_group' => $group,
+            'amount' => $amount,
             'description' => $data['description'],
             'transaction_date' => $data['transaction_date'],
             'reference_number' => $reference,
         ]);
+
+        $this->postToAccounting($reference, $data['transaction_date'], $data['description'], $amount);
 
         return redirect()->route('wash.expenses.index')->with('success', 'Pengeluaran berhasil dicatat. Jalankan migrate untuk mengaktifkan stok wash.');
     }
@@ -275,10 +283,23 @@ class WashExpenseController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'transaction_date' => 'required|date',
-            'amount' => 'required|numeric|min:0',
+            'expense_group' => 'nullable|in:shampoo,snack,caffe,uang_makan,insentif,lembur,lainnya',
+            'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
         ]);
-        $expense->update($data);
+
+        $group = $data['expense_group'] ?? $expense->expense_group ?? 'lainnya';
+        $categoryLabel = $this->getCategoryLabel($group);
+
+        $updateData = [
+            'transaction_date' => $data['transaction_date'],
+            'amount' => (float) $data['amount'],
+            'description' => $data['description'],
+            'category' => $categoryLabel,
+            'expense_group' => $group,
+        ];
+
+        $expense->update($updateData);
 
         return redirect()->route('wash.expenses.index')->with('success', 'Pengeluaran berhasil diperbarui.');
     }
