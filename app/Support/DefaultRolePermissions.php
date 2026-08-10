@@ -178,6 +178,7 @@ class DefaultRolePermissions
                     'wash.member.view',
                     'wash.loyalty.view',
                     'wash.reward.view',
+                    'wash.expense.view', 'wash.expense.create', 'wash.expense.update', 'wash.expense.delete',
                     'profile.view', 'profile.update',
                     'notification.view',
                 ],

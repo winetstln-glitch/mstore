@@ -22,8 +22,10 @@ class WashExpenseController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:wash.report', only: ['index']),
-            new Middleware('permission:wash.manage', only: ['create', 'store', 'edit', 'update', 'destroy', 'stockOut']),
+            new Middleware('permission:wash.expense.view|wash.report|wash.manage', only: ['index']),
+            new Middleware('permission:wash.expense.create|wash.manage', only: ['create', 'store']),
+            new Middleware('permission:wash.expense.update|wash.manage', only: ['edit', 'update', 'stockOut']),
+            new Middleware('permission:wash.expense.delete|wash.manage', only: ['destroy']),
         ];
     }
 

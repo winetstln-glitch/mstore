@@ -892,7 +892,7 @@
                     </a>
                     <div class="collapse {{ $washFinanceActive ? 'show' : '' }}" id="washFinanceCollapse">
                         <div class="ps-3">
-                            @if($hasPermission('wash.manage'))
+                            @if($hasPermission('wash.expense.view') || $hasPermission('wash.manage') || $hasPermission('wash.report'))
                             <a href="{{ route('wash.expenses.index') }}" class="sidebar-item {{ $routeIs('wash.expenses.*') ? 'active' : '' }}">
                                 <i class="fa-solid fa-receipt"></i> {{ __('Pengeluaran') }}
                             </a>
