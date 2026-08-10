@@ -84,47 +84,7 @@
                                 @enderror
                             </div>
 
-                            <!-- Gaji -->
-                            <div class="col-md-6">
-                                <label for="monthly_salary" class="form-label">{{ __('Gaji Pokok Bulanan (IDR)') }}</label>
-                                <input type="number" name="monthly_salary" id="monthly_salary" value="{{ old('monthly_salary', $user->monthly_salary ?? 0) }}" class="form-control @error('monthly_salary') is-invalid @enderror">
-                                <div class="form-text">{{ __('Gaji pokok satu bulan (akan dibagi hari kerja untuk hitung harian).') }}</div>
-                                @error('monthly_salary')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
 
-                            <div class="col-md-6">
-                                <label for="daily_salary" class="form-label">{{ __('Gaji Harian Manual (IDR)') }}</label>
-                                <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', $user->daily_salary ?? 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
-                                <div class="form-text">{{ __('Isi jika ingin menggunakan nilai tetap per hari (abaikan gaji bulanan).') }}</div>
-                                @error('daily_salary')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <!-- Bank Info -->
-                            <div class="col-md-4">
-                                <label for="bank_name" class="form-label">{{ __('Nama Bank') }}</label>
-                                <input type="text" name="bank_name" id="bank_name" value="{{ old('bank_name', $user->bank_name) }}" class="form-control @error('bank_name') is-invalid @enderror" placeholder="BCA/Mandiri/BRI">
-                                @error('bank_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-4">
-                                <label for="bank_account_number" class="form-label">{{ __('Nomor Rekening') }}</label>
-                                <input type="text" name="bank_account_number" id="bank_account_number" value="{{ old('bank_account_number', $user->bank_account_number) }}" class="form-control @error('bank_account_number') is-invalid @enderror">
-                                @error('bank_account_number')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-4">
-                                <label for="bank_account_name" class="form-label">{{ __('Atas Nama') }}</label>
-                                <input type="text" name="bank_account_name" id="bank_account_name" value="{{ old('bank_account_name', $user->bank_account_name) }}" class="form-control @error('bank_account_name') is-invalid @enderror">
-                                @error('bank_account_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
 
                             <!-- Status aktif -->
                             <div class="col-12">
@@ -169,9 +129,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         const nameInput = document.getElementById('name');
         const usernameInput = document.getElementById('username');
-        const monthlySalaryInput = document.getElementById('monthly_salary');
-        const dailySalaryInput = document.getElementById('daily_salary');
-        const workingDays = {{ \App\Models\Setting::getValue('attendance_working_days', 28) }};
 
         if (nameInput && usernameInput) {
             const slugify = (value) => value

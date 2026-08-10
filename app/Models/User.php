@@ -27,7 +27,6 @@ class User extends Authenticatable
         'name',
         'email',
         'username',
-        'attendance_card_code',
         'radius_username',
         'radius_type',
         'password',
