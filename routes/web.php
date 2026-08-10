@@ -1060,10 +1060,12 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::get('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'stockIn'])->name('stock-in');
         Route::post('/{stockItem}/stock-in', [\App\Http\Controllers\WashStockController::class, 'storeStockIn'])->name('stock-in.store');
     });
-    // Test Wash ERP
-    Route::get('/test-wash', function () {
-        return view('test-wash');
-    });
+    if (app()->environment('local')) {
+        // Test Wash ERP
+        Route::get('/test-wash', function () {
+            return view('test-wash');
+        });
+    }
 
     // Wash Suppliers
     Route::prefix('wash/suppliers')->name('wash.suppliers.')->group(function () {
