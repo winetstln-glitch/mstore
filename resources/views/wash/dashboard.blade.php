@@ -125,6 +125,57 @@
     </div>
 
     <div class="row">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                {{ __('Komisi Hari Ini') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($dailyCommission ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-indigo shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-indigo text-uppercase mb-1">
+                                {{ __('Komisi Bulan Ini') }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($monthlyCommission ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-week fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 wash-stat-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                {{ __('Total Komisi Belum Dibayar') }} <span class="text-normal">(Earned Status)</span></div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ number_format($totalUnpaidCommission ?? 0, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2 wash-stat-card">
                 <div class="card-body">
@@ -372,6 +423,8 @@
                                     <th>{{ __('Nama') }}</th>
                                     <th>{{ __('Jam Masuk') }}</th>
                                     <th>{{ __('Pekerjaan') }}</th>
+                                    <th><i class="fa-solid fa-coins text-warning me-1"></i> {{ __('Komisi Hari Ini') }}</th>
+                                    <th><i class="fa-solid fa-clock text-warning me-1"></i> {{ __('Belum Dibayar') }}</th>
                                     <th>{{ __('Status') }}</th>
                                     <th>{{ __('Jam Pulang') }}</th>
                                 </tr>
@@ -387,6 +440,21 @@
                                             </span>
                                         </td>
                                         <td>
+                                            @if(($attendance->commission_today ?? 0) > 0)
+                                                <div class="text-success fw-semibold small">+ Rp {{ number_format($attendance->commission_today ?? 0, 0, ',', '.') }}</div>
+                                                <div class="small text-muted">{{ $attendance->commission_today_items ?? 0 }} item</div>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(($attendance->commission_earned_unpaid ?? 0) > 0)
+                                                <span class="badge bg-warning-subtle text-warning-emphasis">Rp {{ number_format($attendance->commission_earned_unpaid ?? 0, 0, ',', '.') }}</span>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             <span class="badge bg-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'late' ? 'warning' : 'secondary') }}">
                                                 {{ __(ucfirst($attendance->status)) }}
                                             </span>
@@ -395,7 +463,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center">{{ __('Belum ada karyawan yang hadir.') }}</td>
+                                        <td colspan="7" class="text-center">{{ __('Belum ada karyawan yang hadir.') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>

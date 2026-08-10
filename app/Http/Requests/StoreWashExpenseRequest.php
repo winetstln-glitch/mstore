@@ -19,7 +19,7 @@ class StoreWashExpenseRequest extends FormRequest
             'transaction_date' => 'required|date',
             'expense_group' => 'required|in:shampoo,snack,caffe,uang_makan,insentif,lembur,lainnya',
             'stock_item_id' => 'nullable|exists:wash_stock_items,id',
-            'item_name' => 'required_without:stock_item_id|nullable|string|max:100',
+            'item_name' => $isStock ? 'required_without:stock_item_id|nullable|string|max:100' : 'nullable|string|max:100',
             'unit' => 'required_if:expense_group,shampoo,snack,caffe|nullable|string|max:20',
             'quantity' => 'required_if:expense_group,shampoo,snack,caffe|nullable|numeric|min:0.01',
             'unit_price' => 'required_if:expense_group,shampoo,snack,caffe|nullable|numeric|min:0',

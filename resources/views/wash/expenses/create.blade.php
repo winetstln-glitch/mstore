@@ -52,7 +52,7 @@
 
     <div class="card create-panel shadow-sm border-0">
         <div class="card-body p-4">
-            <form method="POST" action="{{ isset($expense) ? route('wash.expenses.update', $expense->id) : route('wash.expenses.store') }}" id="createExpenseForm" novalidate>
+            <form method="POST" action="{{ isset($expense) ? route('wash.expenses.update', $expense->id) : route('wash.expenses.store') }}" id="createExpenseForm" novalidate data-no-loading="true">
                 @csrf
                 @if(isset($expense))
                     @method('PUT')
@@ -316,7 +316,7 @@
 
 @push('scripts')
 <script>
-    // Inject PHP state ke JS global scope (aman via json_encode - HARUS explicit echo JANGAN pakai @json di script tag)
+    // Inject PHP state ke JS global scope (aman via json_encode - HARUS explicit echo JANGAN pakai @@json di script tag)
     const WASH_EXPENSE_INIT = {
         isStockCategory: <?php echo json_encode(isset($isStockCategory) ? $isStockCategory : false); ?>,
     };
@@ -456,9 +456,38 @@
             const btnLoading = submitBtn.querySelector('.btn-loading');
             if (btnText) btnText.classList.toggle('d-none', isLoading);
             if (btnLoading) btnLoading.classList.toggle('d-none', !isLoading);
+            // Also disable all submit buttons in form (mobile sticky footer uses type=submit form=)
+            document.querySelectorAll('button[type="submit"][form="createExpenseForm"], #createExpenseForm button[type="submit"]').forEach(function (btn) {
+                if (btn !== submitBtn) btn.disabled = isLoading;
+            });
+            // Show/Hide SweetAlert loading via global mstoreNotify (if available)
+            if (window.mstoreNotify && typeof window.mstoreNotify.loading === 'function' && typeof window.mstoreNotify.closeLoading === 'function') {
+                if (isLoading) {
+                    window.mstoreNotify.loading(form.dataset.loadingMessage || 'Menyimpan data pengeluaran...');
+                } else {
+                    window.mstoreNotify.closeLoading();
+                }
+            }
         }
 
+        // Pastikan SweetAlert loading tertutup jika browser navigate / halaman reload
+        window.addEventListener('beforeunload', function () {
+            try {
+                if (window.Swal && typeof window.Swal.close === 'function') {
+                    window.Swal.close();
+                } else if (window.mstoreNotify && typeof window.mstoreNotify.closeLoading === 'function') {
+                    window.mstoreNotify.closeLoading();
+                }
+            } catch (e) { /* noop */ }
+        });
+
         form.addEventListener('submit', function(e) {
+            // 0. Anti double submit guard (cegah submit berulang)
+            if (submitBtn.disabled) {
+                e.preventDefault();
+                return false;
+            }
+
             // 1. Pastikan amount di-sync dulu SEBELUM validasi
             const selOption = expenseGroupSelect.options[expenseGroupSelect.selectedIndex];
             const isStock = selOption && selOption.dataset.isStock === '1';
@@ -481,7 +510,6 @@
                 } else {
                     alert('Mohon lengkapi semua field yang wajib diisi.');
                 }
-                setBtnLoading(false);
                 return false;
             }
 
@@ -490,23 +518,19 @@
             if (!isFinite(finalAmount) || finalAmount <= 0) {
                 e.preventDefault();
                 alert('❌ Nominal pengeluaran harus diisi dan lebih besar dari Rp 0.\n\nJika field Nominal terlihat abu-abu / tidak bisa diketik:\n→ Pilih kategori terlebih dahulu (Uang Makan/Insentif/Lembur/Lainnya) agar field aktif.');
-                setBtnLoading(false);
                 amountDisplay.focus();
                 return false;
             }
 
-            // 4. Cegah double submit: disable button
-            if (submitBtn.disabled) {
-                e.preventDefault();
-                return false;
-            }
+            // 4. Semua validasi LULUS: aktifkan loading state
             setBtnLoading(true);
 
             // 5. FALLBACK: jika setelah 45 detik tidak ada respon (server error / timeout), aktifkan kembali
             setTimeout(function() {
                 if (submitBtn.disabled) {
                     setBtnLoading(false);
-                    console.warn('[Warn] Submit timeout - tombol diaktifkan kembali. Coba submit ulang atau cek koneksi.');
+                    console.warn('[WashExpense] Submit timeout - tombol diaktifkan kembali. Coba submit ulang atau cek koneksi.');
+                    alert('⏱️ Timeout: Server terlalu lama merespon. Silakan coba lagi atau refresh halaman.');
                 }
             }, 45000);
 

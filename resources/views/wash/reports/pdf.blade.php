@@ -33,8 +33,16 @@
             <td>Pengeluaran</td><td class="right">{{ number_format($monthlyExpense,0,',','.') }}</td>
         </tr>
         <tr>
-            <td><strong>Laba</strong></td><td class="right"><strong>{{ number_format($dailyIncome-$dailyExpense,0,',','.') }}</strong></td>
-            <td><strong>Laba</strong></td><td class="right"><strong>{{ number_format($monthlyIncome-$monthlyExpense,0,',','.') }}</strong></td>
+            <td><strong>Laba Kotor</strong></td><td class="right"><strong>{{ number_format($dailyIncome-$dailyExpense,0,',','.') }}</strong></td>
+            <td><strong>Laba Kotor</strong></td><td class="right"><strong>{{ number_format($monthlyIncome-$monthlyExpense,0,',','.') }}</strong></td>
+        </tr>
+        <tr style="background-color: #fde2e2;">
+            <td>Potongan Komisi Operator Wash</td><td class="right">- {{ number_format($dailyCommission,0,',','.') }}</td>
+            <td>Potongan Komisi Operator Wash</td><td class="right">- {{ number_format($monthlyCommission,0,',','.') }}</td>
+        </tr>
+        <tr style="background-color: #e3f2fd;">
+            <td><strong>Laba Bersih (Setelah Komisi)</strong></td><td class="right"><strong>{{ number_format($dailyTotalNetProfit,0,',','.') }}</strong></td>
+            <td><strong>Laba Bersih (Setelah Komisi)</strong></td><td class="right"><strong>{{ number_format($monthlyTotalNetProfit,0,',','.') }}</strong></td>
         </tr>
         <tr>
             <td>Modal Awal Caffe</td><td class="right">{{ number_format($dailyCaffeInitialCapital,0,',','.') }}</td>
@@ -49,6 +57,33 @@
             <td><strong>Selisih Caffe</strong></td><td class="right"><strong>{{ number_format($monthlyCaffeRevenue-$monthlyCaffeInitialCapital,0,',','.') }}</strong></td>
         </tr>
     </table>
+    @if($dailyCommissionDetail->count() > 0)
+    <table>
+        <thead>
+            <tr><th colspan="4" style="background: #ffeeba;">Rincian Komisi Karyawan (Harian)</th></tr>
+            <tr>
+                <th>No</th>
+                <th>Nama Karyawan</th>
+                <th class="right">Item</th>
+                <th class="right">Komisi</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($dailyCommissionDetail as $idx => $d)
+            <tr>
+                <td>{{ $idx + 1 }}</td>
+                <td>{{ $d->name }}</td>
+                <td class="right">{{ number_format((int)$d->item_count,0,',','.') }}</td>
+                <td class="right">{{ number_format((int)$d->total_commission,0,',','.') }}</td>
+            </tr>
+            @endforeach
+            <tr style="font-weight: bold; background: #fde2e2;">
+                <td colspan="3" class="right">TOTAL POTONGAN KOMISI</td>
+                <td class="right">- {{ number_format($dailyCommission,0,',','.') }}</td>
+            </tr>
+        </tbody>
+    </table>
+    @endif
 
     <table>
         <tr>

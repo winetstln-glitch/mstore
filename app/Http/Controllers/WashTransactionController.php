@@ -20,6 +20,7 @@ use App\Models\WashLoyaltyCounter;
 use App\Models\WashRewardVoucher;
 use App\Services\AccountingPoster;
 use App\Services\AuditLogService;
+use App\Services\EmployeeSyncService;
 use App\Services\Wash\WashLoyaltyService;
 use App\Services\Wash\WashMembershipService;
 use App\Services\WhatsAppService;
@@ -30,6 +31,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -64,6 +66,13 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function dashboard()
     {
+        try {
+            $syncService = app(EmployeeSyncService::class);
+            $syncService->ensureWashEmployeesFromUsers();
+        } catch (\Throwable $e) {
+            Log::error('[WashDashboard] EmployeeSync fatal: '.get_class($e).': '.$e->getMessage());
+        }
+
         $today = now()->format('Y-m-d');
         $month = now()->format('Y-m');
         $user = Auth::user();
@@ -121,6 +130,50 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->whereIn('status', ['present', 'late'])
             ->distinct('user_id')
             ->count('user_id');
+
+        $dailyCommission = 0;
+        $monthlyCommission = 0;
+        $totalUnpaidCommission = 0;
+        $employeeCommissionToday = collect();
+        $employeeCommissionEarnedOverall = collect();
+        try {
+            if (Schema::hasTable('wash_commission_earnings')) {
+                $dailyCommQ = \App\Models\WashCommissionEarning::query()
+                    ->whereDate('created_at', $today)
+                    ->where('status', \App\Models\WashCommissionEarning::STATUS_EARNED);
+                $dailyCommission = (int) (clone $dailyCommQ)->sum('total_earned');
+                $employeeCommissionToday = (clone $dailyCommQ)
+                    ->join('wash_employees', 'wash_employees.id', '=', 'wash_commission_earnings.wash_employee_id')
+                    ->selectRaw('wash_employee_id, wash_employees.name, count(*) as cnt, sum(total_earned) as total')
+                    ->groupBy(['wash_employee_id', 'wash_employees.name'])
+                    ->orderByDesc('total')
+                    ->get();
+
+                $monthlyCommQ = \App\Models\WashCommissionEarning::query()
+                    ->where('created_at', 'like', "$month%")
+                    ->where('status', \App\Models\WashCommissionEarning::STATUS_EARNED);
+                $monthlyCommission = (int) (clone $monthlyCommQ)->sum('total_earned');
+
+                $overallQ = \App\Models\WashCommissionEarning::query()
+                    ->where('status', \App\Models\WashCommissionEarning::STATUS_EARNED);
+                $totalUnpaidCommission = (int) (clone $overallQ)->sum('total_earned');
+                $employeeCommissionEarnedOverall = (clone $overallQ)
+                    ->join('wash_employees', 'wash_employees.id', '=', 'wash_commission_earnings.wash_employee_id')
+                    ->selectRaw('wash_employee_id, wash_employees.name, count(*) as cnt, sum(total_earned) as total')
+                    ->groupBy(['wash_employee_id', 'wash_employees.name'])
+                    ->orderByDesc('total')
+                    ->get();
+            }
+        } catch (\Throwable) {}
+
+        foreach ($presentEmployees as $attendance) {
+            $empId = $attendance->user->washEmployee?->id;
+            $commToday = $empId ? $employeeCommissionToday->firstWhere('wash_employee_id', $empId) : null;
+            $attendance->commission_today = $commToday ? (int) ($commToday->total ?? 0) : 0;
+            $attendance->commission_today_items = $commToday ? (int) ($commToday->cnt ?? 0) : 0;
+            $commOverall = $empId ? $employeeCommissionEarnedOverall->firstWhere('wash_employee_id', $empId) : null;
+            $attendance->commission_earned_unpaid = $commOverall ? (int) ($commOverall->total ?? 0) : 0;
+        }
 
         $startDate = now()->subDays(6)->toDateString();
         $endDate = now()->toDateString();
@@ -243,12 +296,33 @@ class WashTransactionController extends Controller implements HasMiddleware
             'membershipGrowth',
             'rewardRedemptionCount',
             'repeatCustomerRate',
-            'topMember'
+            'topMember',
+            'dailyCommission',
+            'monthlyCommission',
+            'totalUnpaidCommission',
+            'employeeCommissionEarnedOverall'
         ));
     }
 
     public function pos()
     {
+        try {
+            $syncService = app(EmployeeSyncService::class);
+            $syncResult = $syncService->ensureWashEmployeesFromUsers();
+            if (! empty($syncResult['errors'])) {
+                Log::warning('[WashPOS] EmployeeSync errors: '.implode('; ', $syncResult['errors']));
+            }
+            $employees = $syncService->getActiveWashEmployeesForDropdown();
+        } catch (\Throwable $e) {
+            Log::error('[WashPOS] EmployeeSync fatal: '.get_class($e).': '.$e->getMessage(), ['file' => $e->getFile(), 'line' => $e->getLine()]);
+            $employees = \App\Models\WashEmployee::query()
+                ->where(function ($q) {
+                    $q->whereNull('status')->orWhere('status', '!=', 'inactive');
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        }
+
         $services = WashService::query()
             ->where('is_active', true)
             ->with(['priceRules' => function ($q) {
@@ -261,7 +335,6 @@ class WashTransactionController extends Controller implements HasMiddleware
             ->orderBy('name')
             ->get();
         $brands = $this->brands;
-        $employees = \App\Models\WashEmployee::where('status', 'active')->orderBy('name')->get(['id', 'name']);
         $allUsers = \App\Models\User::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $holidaySchedule = $this->resolveHolidayPricingSchedule();
         $knownVehiclePlates = $this->getKnownVehiclePlates();
@@ -900,10 +973,12 @@ class WashTransactionController extends Controller implements HasMiddleware
     {
         $query = WashTransaction::with(['user', 'items', 'washCustomer', 'member.level']);
 
-        if ($request->start_date && $request->end_date) {
+        $startDate = $request->start_date ? (string) $request->start_date : null;
+        $endDate = $request->end_date ? (string) $request->end_date : null;
+        if ($startDate && $endDate) {
             $query->whereBetween('created_at', [
-                $request->start_date.' 00:00:00',
-                $request->end_date.' 23:59:59',
+                $startDate.' 00:00:00',
+                $endDate.' 23:59:59',
             ]);
         }
         if ($request->filled('vehicle_plate')) {
@@ -929,6 +1004,35 @@ class WashTransactionController extends Controller implements HasMiddleware
             });
         }
 
+        $summaryQuery = clone $query;
+        $txIdsForSummaries = (clone $query)->pluck('id');
+
+        $grossSales = (float) $summaryQuery->sum('total_amount');
+        $totalDiscount = (float) $summaryQuery->sum('discount_amount');
+        $netSales = max(0, $grossSales - $totalDiscount);
+        $txCount = (int) $summaryQuery->count();
+
+        $totalCommission = 0;
+        $commissionPerEmployee = collect();
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('wash_commission_earnings') && $txIdsForSummaries->count() > 0) {
+                $commQ = \App\Models\WashCommissionEarning::query()
+                    ->whereIn('wash_transaction_id', $txIdsForSummaries)
+                    ->where('status', \App\Models\WashCommissionEarning::STATUS_EARNED);
+
+                $totalCommission = (int) (clone $commQ)->sum('total_earned');
+
+                $commissionPerEmployee = (clone $commQ)
+                    ->join('wash_employees', 'wash_employees.id', '=', 'wash_commission_earnings.wash_employee_id')
+                    ->selectRaw('wash_employee_id, wash_employees.name, count(*) as cnt, sum(total_earned) as total')
+                    ->groupBy(['wash_employee_id', 'wash_employees.name'])
+                    ->orderByDesc('total')
+                    ->get();
+            }
+        } catch (\Throwable) {}
+
+        $finalNetIncome = max(0, $netSales - $totalCommission);
+
         $per = $request->get('per_page', '10');
         if ($per === 'all') {
             $perPage = max(1, (int) $query->count());
@@ -943,7 +1047,17 @@ class WashTransactionController extends Controller implements HasMiddleware
 
         $knownVehiclePlates = $this->getKnownVehiclePlates();
 
-        return view('wash.transactions.index', compact('transactions', 'knownVehiclePlates'));
+        return view('wash.transactions.index', compact(
+            'transactions',
+            'knownVehiclePlates',
+            'txCount',
+            'grossSales',
+            'totalDiscount',
+            'netSales',
+            'totalCommission',
+            'finalNetIncome',
+            'commissionPerEmployee'
+        ));
     }
 
     private function applyVehiclePlateFilter($query, string $plate): void

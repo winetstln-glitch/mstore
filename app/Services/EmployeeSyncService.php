@@ -134,6 +134,47 @@ class EmployeeSyncService
         $employee->save();
         $this->cleanupDuplicateEmployeesByUserId($user->id);
         $this->cleanupDuplicateEmployeesByName($employee->full_name);
+        $this->syncWashEmployeeFromUser($user);
+    }
+
+    public function syncWashEmployeeFromUser(User $user): void
+    {
+        $roleName = strtolower((string) ($user->role?->name ?? ''));
+        $isKaryawanWash = $roleName === strtolower(Role::KARYAWAN_WASH);
+        $isActive = (bool) $user->is_active;
+
+        try {
+            $washEmployee = WashEmployee::query()->where('user_id', $user->id)->first();
+            if ($isKaryawanWash && $isActive) {
+                if (! $washEmployee) {
+                    WashEmployee::query()->create([
+                        'user_id' => $user->id,
+                        'name' => $user->name,
+                        'phone' => $user->phone ?: '-',
+                        'status' => 'active',
+                    ]);
+                } else {
+                    $updates = [];
+                    if ($washEmployee->status !== 'active') {
+                        $updates['status'] = 'active';
+                    }
+                    $trimmedName = trim((string) $washEmployee->name);
+                    if ($trimmedName === '' && trim((string) $user->name) !== '') {
+                        $updates['name'] = $user->name;
+                    }
+                    if (! empty($updates)) {
+                        $washEmployee->update($updates);
+                    }
+                }
+            } elseif ($washEmployee) {
+                if (! $isActive && $washEmployee->status === 'active') {
+                    $washEmployee->update(['status' => 'inactive']);
+                } elseif (! $isKaryawanWash && $washEmployee->status === 'active') {
+                    $washEmployee->update(['status' => 'inactive']);
+                }
+            }
+        } catch (\Throwable) {
+        }
     }
 
     public function unlinkUser(int $userId): void
@@ -452,6 +493,85 @@ class EmployeeSyncService
             ->where('wash_employee_id', $washEmployeeId)
             ->where('id', '!=', $keeper->id)
             ->delete();
+    }
+
+    public function ensureWashEmployeesFromUsers(): array
+    {
+        $result = ['created' => 0, 'updated' => 0, 'deactivated' => 0, 'errors' => []];
+
+        $roleIdKaryawanWash = Role::query()->where('name', Role::KARYAWAN_WASH)->value('id');
+        if (! $roleIdKaryawanWash) {
+            $result['errors'][] = 'Role '.Role::KARYAWAN_WASH.' tidak ditemukan';
+
+            return $result;
+        }
+
+        $usersKaryawanWash = User::query()
+            ->where('is_active', true)
+            ->where('role_id', $roleIdKaryawanWash)
+            ->get(['id', 'name', 'phone', 'email']);
+
+        foreach ($usersKaryawanWash as $user) {
+            try {
+                $existing = WashEmployee::query()->where('user_id', $user->id)->first();
+                if (! $existing) {
+                    WashEmployee::query()->create([
+                        'user_id' => $user->id,
+                        'name' => $user->name,
+                        'phone' => $user->phone ?: '-',
+                        'status' => 'active',
+                    ]);
+                    $result['created']++;
+                } else {
+                    $needUpdate = false;
+                    $updates = [];
+                    if ($existing->status !== 'active') {
+                        $updates['status'] = 'active';
+                        $needUpdate = true;
+                    }
+                    $nameTrim = trim((string) $existing->name);
+                    if ($nameTrim === '' && trim((string) $user->name) !== '') {
+                        $updates['name'] = $user->name;
+                        $needUpdate = true;
+                    }
+                    if ($needUpdate) {
+                        $existing->update($updates);
+                        $result['updated']++;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $result['errors'][] = 'user_id='.$user->id.': '.get_class($e).': '.$e->getMessage();
+            }
+        }
+
+        try {
+            $toBeDeactivated = WashEmployee::query()
+                ->whereNotNull('user_id')
+                ->where('status', 'active')
+                ->whereHas('user', function ($q) {
+                    $q->where('is_active', false);
+                });
+            $countToDeactivate = $toBeDeactivated->count();
+            if ($countToDeactivate > 0) {
+                $toBeDeactivated->update(['status' => 'inactive']);
+                $result['deactivated'] = $countToDeactivate;
+            }
+        } catch (\Throwable $e) {
+            $result['errors'][] = 'deactivate: '.get_class($e).': '.$e->getMessage();
+        }
+
+        return $result;
+    }
+
+    public function getActiveWashEmployeesForDropdown()
+    {
+        return WashEmployee::query()
+            ->where(function ($q) {
+                $q->whereNull('status')
+                    ->orWhere('status', '!=', 'inactive');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function employeeQualityScore(Employee $employee): int
