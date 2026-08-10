@@ -37,21 +37,10 @@ class User extends Authenticatable
         'phone',
         'telegram_chat_id',
         'is_active',
-        'daily_salary',
-        'monthly_salary',
-        'bank_name',
-        'bank_account_number',
-        'bank_account_name',
         'avatar',
         'last_seen_at',
         'last_seen_ip',
         'last_seen_user_agent',
-        'attendance_device_hash',
-        'attendance_device_locked_at',
-        'annual_leave_quota',
-        'annual_leave_used',
-        'sick_leave_quota',
-        'sick_leave_used',
     ];
 
     /**
@@ -76,11 +65,6 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'last_seen_at' => 'datetime',
-            'attendance_device_locked_at' => 'datetime',
-            'annual_leave_quota' => 'integer',
-            'annual_leave_used' => 'integer',
-            'sick_leave_quota' => 'integer',
-            'sick_leave_used' => 'integer',
         ];
     }
 

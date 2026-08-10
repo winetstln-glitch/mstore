@@ -114,19 +114,13 @@ trait HasAttendanceFilters
             } elseif ($employeeMonthlySalary > 0) {
                 $dailySalary = $employeeMonthlySalary / $workingDays;
                 $salaryCalculationNote = 'Gaji harian dihitung dari gaji bulanan (' . number_format($employeeMonthlySalary, 0, ',', '.') . ' / ' . $workingDays . ' hari)';
-            } elseif ($user->daily_salary > 0) {
-                $dailySalary = $user->daily_salary;
-                $salaryCalculationNote = 'Gaji harian diisi manual (legacy)';
-            } elseif ($user->monthly_salary > 0) {
-                $dailySalary = $user->monthly_salary / $workingDays;
-                $salaryCalculationNote = 'Gaji harian dihitung dari gaji bulanan (legacy) (' . number_format($user->monthly_salary, 0, ',', '.') . ' / ' . $workingDays . ' hari)';
             } else {
                 $dailySalary = 0;
                 $salaryCalculationNote = 'Gaji belum diatur';
             }
             
-            // Get monthly salary from Employee first, then User for backward compatibility
-            $monthlySalary = $employee?->monthly_salary ?? $user->monthly_salary ?? 0;
+            // Get monthly salary from Employee
+            $monthlySalary = $employee?->monthly_salary ?? 0;
 
             // Hitung total hari yang dibayar sesuai kebijakan
             $paidDays = $presentCount + $lateCount + $leaveCount + $permitCount + $sickCount;

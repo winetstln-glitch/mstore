@@ -67,12 +67,15 @@ class LeaveRequestService
 
     public function hasEnoughLeaveQuota(User $user, int $requestedDays, string $type): bool
     {
+        $employee = $user->employee;
+        if (!$employee) return false;
+
         if ($type === 'sick') {
-            $remaining = $user->sick_leave_quota - $user->sick_leave_used;
+            $remaining = $employee->sick_leave_quota - $employee->sick_leave_used;
             return $remaining >= $requestedDays;
         }
 
-        $remaining = $user->annual_leave_quota - $user->annual_leave_used;
+        $remaining = $employee->annual_leave_quota - $employee->annual_leave_used;
         return $remaining >= $requestedDays;
     }
 
@@ -159,28 +162,38 @@ class LeaveRequestService
 
     private function updateLeaveQuota(LeaveRequest $leaveRequest): void
     {
-        $user = $leaveRequest->user;
+        $employee = $leaveRequest->user->employee;
+        if (!$employee) return;
+        
         $days = $leaveRequest->leave_days_used;
 
         if ($leaveRequest->type === 'sick') {
-            $user->increment('sick_leave_used', $days);
+            $employee->increment('sick_leave_used', $days);
         } else {
-            $user->increment('annual_leave_used', $days);
+            $employee->increment('annual_leave_used', $days);
         }
     }
 
     public function getUserLeaveBalance(User $user): array
     {
+        $employee = $user->employee;
+        if (!$employee) {
+            return [
+                'annual' => ['quota' => 0, 'used' => 0, 'remaining' => 0],
+                'sick' => ['quota' => 0, 'used' => 0, 'remaining' => 0],
+            ];
+        }
+
         return [
             'annual' => [
-                'quota' => $user->annual_leave_quota,
-                'used' => $user->annual_leave_used,
-                'remaining' => $user->annual_leave_quota - $user->annual_leave_used,
+                'quota' => $employee->annual_leave_quota,
+                'used' => $employee->annual_leave_used,
+                'remaining' => $employee->annual_leave_quota - $employee->annual_leave_used,
             ],
             'sick' => [
-                'quota' => $user->sick_leave_quota,
-                'used' => $user->sick_leave_used,
-                'remaining' => $user->sick_leave_quota - $user->sick_leave_used,
+                'quota' => $employee->sick_leave_quota,
+                'used' => $employee->sick_leave_used,
+                'remaining' => $employee->sick_leave_quota - $employee->sick_leave_used,
             ],
         ];
     }

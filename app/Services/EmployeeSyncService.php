@@ -107,13 +107,7 @@ class EmployeeSyncService
         $employee->position = $mappedPosition ?: ($user->role?->label ?: ($employee->position ?: 'Karyawan'));
         $employee->department = $this->departmentFromRole($user->role?->name);
         
-        // Sync salary fields from User to Employee, only if Employee fields are empty
-        if (empty($employee->monthly_salary) || $employee->monthly_salary == 0) {
-            $employee->monthly_salary = $user->monthly_salary ?? 0;
-        }
-        if (empty($employee->daily_salary) || $employee->daily_salary == 0) {
-            $employee->daily_salary = $user->daily_salary ?? 0;
-        }
+
 
         if (! $employee->exists) {
             $employee->date_of_birth = now()->subYears(20)->format('Y-m-d');

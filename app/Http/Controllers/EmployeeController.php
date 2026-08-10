@@ -120,8 +120,6 @@ class EmployeeController extends Controller implements HasMiddleware
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
                     'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
-                    'monthly_salary' => $validated['monthly_salary'] ?? 0,
-                    'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
 
                 // Sync Employee.position → User.role (reverse direction, if position matches a role)
@@ -196,8 +194,6 @@ class EmployeeController extends Controller implements HasMiddleware
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
                     'avatar' => $validated['id_card_photo_path'] ?? $user->avatar,
-                    'monthly_salary' => $validated['monthly_salary'] ?? 0,
-                    'daily_salary' => $validated['daily_salary'] ?? 0,
                 ]);
 
                 // Sync Employee.position → User.role (reverse direction, 2-way sync)
@@ -483,6 +479,14 @@ class EmployeeController extends Controller implements HasMiddleware
             'employment_status' => ['required', Rule::in(['Tetap', 'Training'])],
             'monthly_salary' => ['nullable', 'numeric', 'min:0'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
+            'annual_leave_quota' => ['nullable', 'integer', 'min:0'],
+            'annual_leave_used' => ['nullable', 'integer', 'min:0'],
+            'sick_leave_quota' => ['nullable', 'integer', 'min:0'],
+            'sick_leave_used' => ['nullable', 'integer', 'min:0'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
+            'attendance_card_code' => ['nullable', 'string', 'max:255', Rule::unique('employees', 'attendance_card_code')->ignore($id)],
             'document' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
             'id_card_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'id_card_photo_base64' => ['nullable', 'string'],

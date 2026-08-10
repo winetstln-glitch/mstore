@@ -67,8 +67,6 @@ class TechnicianController extends Controller implements HasMiddleware
             'role_id' => $role->id,
             'phone' => $request->phone,
             'telegram_chat_id' => $request->telegram_chat_id,
-            'monthly_salary' => $request->monthly_salary ?? 0,
-            'daily_salary' => $request->daily_salary ?? 0,
             'is_active' => true,
         ]);
 
@@ -125,8 +123,6 @@ class TechnicianController extends Controller implements HasMiddleware
             'email' => $request->email,
             'phone' => $request->phone,
             'telegram_chat_id' => $request->telegram_chat_id,
-            'monthly_salary' => $request->monthly_salary ?? 0,
-            'daily_salary' => $request->daily_salary ?? 0,
             'is_active' => $request->has('is_active'),
         ]);
 
