@@ -316,9 +316,9 @@
 
 @push('scripts')
 <script>
-    // ⚠️ Inject PHP state ke JS global scope (aman via @json / json_encode)
+    // Inject PHP state ke JS global scope (aman via json_encode - HARUS explicit echo JANGAN pakai @json di script tag)
     const WASH_EXPENSE_INIT = {
-        isStockCategory: @json($isStockCategory ?? false),
+        isStockCategory: <?php echo json_encode(isset($isStockCategory) ? $isStockCategory : false); ?>,
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -337,7 +337,7 @@
         const submitBtn = document.getElementById('submitBtn');
         const form = document.getElementById('createExpenseForm');
 
-        // 🔧 DEFINE isStockCategory di LOCAL SCOPE JS (FIX ReferenceError!)
+        // DEFINE isStockCategory di LOCAL SCOPE JS (FIX ReferenceError!)
         // Primary: dari selected option di DOM (paling akurat), fallback: dari PHP init.
         let isStockCategory = false;
         try {
@@ -400,7 +400,7 @@
             const selectedOption = expenseGroupSelect.options[expenseGroupSelect.selectedIndex];
             const isStock = selectedOption.dataset.isStock === '1';
 
-            // 🔧 UPDATE global scope isStockCategory (supaya tetap sinkron usah user ganti kategori)
+            // UPDATE global scope isStockCategory (supaya tetap sinkron usah user ganti kategori)
             isStockCategory = isStock;
             
             stockSection.style.display = isStock ? 'block' : 'none';
@@ -523,7 +523,7 @@
         amountInput.addEventListener('input', updateAmountDisplay);
 
         // Initialize
-        // ⚠️ Jika halaman reload karena validasi error → old('amount') mungkin sudah berisi number → sync ke display
+        // Jika halaman reload karena validasi error - old('amount') mungkin sudah berisi number - sync ke display
         if (amountInput.value) {
             updateAmountDisplay();
         }
