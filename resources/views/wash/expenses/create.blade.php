@@ -188,10 +188,19 @@
                             <span class="input-group-text bg-primary text-white">Rp</span>
                             <input type="text" id="amountDisplay" class="form-control" 
                                    placeholder="0" 
-                                   readonly 
-                                   style="background-color: #f8fafc;">
+                                   {{ $isStockCategory ? 'readonly' : '' }}
+                                   style="background-color: {{ $isStockCategory ? '#f8fafc' : '' }};">
                             <input type="hidden" name="amount" id="amountInput" 
                                    value="{{ old('amount', $expense->amount ?? '') }}">
+                        </div>
+                        <div class="form-text mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <span class="amount-hint-stock" style="{{ !$isStockCategory ? 'display:none;' : '' }}">
+                                Nominal otomatis dihitung dari Qty × Harga Satuan
+                            </span>
+                            <span class="amount-hint-manual" style="{{ $isStockCategory ? 'display:none;' : '' }}">
+                                Masukkan nominal pengeluaran
+                            </span>
                         </div>
                     </div>
 
@@ -305,6 +314,14 @@
             amountDisplay.value = isFinite(value) ? rupiahFormatter.format(value) : '';
         }
 
+        // 1b. Handle manual amount input (for non-stock categories)
+        function handleManualAmountInput() {
+            const raw = amountDisplay.value.replace(/[^0-9]/g, '');
+            const num = raw === '' ? 0 : parseInt(raw, 10);
+            amountInput.value = isFinite(num) ? num : '';
+            amountDisplay.value = isFinite(num) && num > 0 ? rupiahFormatter.format(num) : '';
+        }
+
         // 2. Calculate amount for stock category
         function calculateStockAmount() {
             const qty = parseFloat(quantityInput.value || '0');
@@ -342,6 +359,14 @@
             if (unitInput) unitInput.required = isStock;
             if (unitPriceInput) unitPriceInput.required = isStock;
 
+            // Toggle amount input readonly state
+            amountDisplay.readOnly = isStock;
+            amountDisplay.style.backgroundColor = isStock ? '#f8fafc' : '';
+
+            // Toggle hints
+            document.querySelector('.amount-hint-stock').style.display = isStock ? '' : 'none';
+            document.querySelector('.amount-hint-manual').style.display = isStock ? 'none' : '';
+
             // Filter stock items by category
             if (isStock) {
                 const category = selectedOption.value;
@@ -354,9 +379,11 @@
                     const show = optionCat === category || (category === 'caffe' && optionCat === 'kopi');
                     option.style.display = show ? 'block' : 'none';
                 });
+                calculateStockAmount();
+            } else {
+                // For non-stock, don't auto-zero (keep existing value if editing)
+                updateAmountDisplay();
             }
-
-            calculateStockAmount();
         }
 
         // 5. Handle stock item select
@@ -387,6 +414,7 @@
         stockItemSelect.addEventListener('change', handleStockItemChange);
         quantityInput.addEventListener('input', calculateStockAmount);
         unitPriceInput.addEventListener('input', calculateStockAmount);
+        amountDisplay.addEventListener('input', handleManualAmountInput);
         amountInput.addEventListener('input', updateAmountDisplay);
 
         // Initialize

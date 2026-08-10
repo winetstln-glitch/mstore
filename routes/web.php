@@ -1004,25 +1004,25 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::get('/reports/pdf', [\App\Http\Controllers\WashReportController::class, 'pdf'])->name('reports.pdf');
         Route::get('/reports/excel', [\App\Http\Controllers\WashReportController::class, 'excel'])->name('reports.excel');
         Route::get('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'index'])
-            ->middleware('permission:wash.report')
+            ->middleware('permission:wash.expense.view|wash.report|wash.manage')
             ->name('expenses.index');
         Route::get('/expenses/create', [\App\Http\Controllers\WashExpenseController::class, 'create'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.create|wash.manage')
             ->name('expenses.create');
         Route::post('/expenses', [\App\Http\Controllers\WashExpenseController::class, 'store'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.create|wash.manage')
             ->name('expenses.store');
         Route::post('/expenses/stock-out', [\App\Http\Controllers\WashExpenseController::class, 'stockOut'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.update|wash.manage')
             ->name('expenses.stock_out');
         Route::get('/expenses/{expense}/edit', [\App\Http\Controllers\WashExpenseController::class, 'edit'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.update|wash.manage')
             ->name('expenses.edit');
         Route::put('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'update'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.update|wash.manage')
             ->name('expenses.update');
         Route::delete('/expenses/{expense}', [\App\Http\Controllers\WashExpenseController::class, 'destroy'])
-            ->middleware('permission:wash.manage')
+            ->middleware('permission:wash.expense.delete|wash.manage')
             ->name('expenses.destroy');
         Route::get('/customer/check', [\App\Http\Controllers\WashTransactionController::class, 'checkCustomer'])
             ->middleware('permission:wash.pos')
