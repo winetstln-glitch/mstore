@@ -494,8 +494,28 @@ body #page-content-wrapper .wash-reports-page > div.card,
     border-bottom-color: rgba(96,165,250,0.22) !important;
     color: #e2e8f0 !important;
 }
-[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table thead th {
-    background: rgba(51,65,85,0.55) !important;
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card > .card-body,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card .card-body {
+    color: #e2e8f0 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card-header.bg-warning,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card-header.bg-warning.text-dark {
+    background-color: rgba(245,158,11,0.18) !important;
+    color: #fbbf24 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card-header.bg-primary {
+    background-color: rgba(59,130,246,0.20) !important;
+    color: #bfdbfe !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card-header.bg-dark {
+    background-color: rgba(30,41,59,0.85) !important;
+    color: #e2e8f0 !important;
+}
+
+/* TABLE: DARK MODE FULL OVERRIDE */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table thead th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table thead.table-light th {
+    background: rgba(51,65,85,0.70) !important;
     color: #cbd5e1 !important;
     border-bottom-color: rgba(96,165,250,0.22) !important;
 }
@@ -503,7 +523,81 @@ body #page-content-wrapper .wash-reports-page > div.card,
     border-top-color: rgba(96,165,250,0.15) !important;
     color: #e2e8f0 !important;
 }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(30,41,59,0.55) !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table-hover > tbody > tr:hover > td {
+    background-color: rgba(59,130,246,0.10) !important;
+}
+
+/* TFOOT & TABLE COLOR VARIANTS (table-light/secondary/warning/danger/success/primary) di dark mode */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tfoot td,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tfoot th {
+    background: rgba(51,65,85,0.55) !important;
+    border-top-color: rgba(96,165,250,0.28) !important;
+    color: #e2e8f0 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-light > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-light > td {
+    background-color: rgba(51,65,85,0.70) !important;
+    color: #e2e8f0 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-secondary > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-secondary > td {
+    background-color: rgba(71,85,105,0.70) !important;
+    color: #f1f5f9 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-warning > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-warning > td {
+    background-color: rgba(245,158,11,0.14) !important;
+    color: #fbbf24 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-danger > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-danger > td {
+    background-color: rgba(239,68,68,0.14) !important;
+    color: #fca5a5 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-success > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-success > td {
+    background-color: rgba(16,185,129,0.14) !important;
+    color: #6ee7b7 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-primary > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-primary > td {
+    background-color: rgba(59,130,246,0.14) !important;
+    color: #93c5fd !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-info > th,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table tr.table-info > td {
+    background-color: rgba(56,189,248,0.14) !important;
+    color: #7dd3fc !important;
+}
+
+/* TABLE CONTAINER / RESPONSIVE */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table-responsive,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .table-responsive-mobile {
+    border-color: rgba(96,165,250,0.22) !important;
+    background-color: #0f172a !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card > .table-responsive,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .card > .table-responsive-mobile {
+    background-color: transparent !important;
+}
+
+/* TABS + TAB CONTENT */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .wash-report-tabs {
+    border-bottom-color: rgba(96,165,250,0.22) !important;
+    background: linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%) !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .wash-report-tabs .nav-link {
+    color: #94a3b8 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .wash-report-tabs .nav-link:hover {
+    color: #60a5fa !important;
+    background: rgba(59,130,246,0.08) !important;
+}
 [data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .wash-report-tabs .nav-link.active {
+    color: #60a5fa !important;
     background-color: #0f172a !important;
     border-color: rgba(96,165,250,0.22) !important;
     border-bottom-color: #0f172a !important;
@@ -511,13 +605,72 @@ body #page-content-wrapper .wash-reports-page > div.card,
 [data-bs-theme="dark"] #page-content-wrapper .wash-reports-page #reportTabContent.tab-content {
     background-color: #0f172a !important;
 }
+
+/* STAT CARD SUMMARY (4 card atas) */
 [data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary.card {
     background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%) !important;
+    background-color: rgba(15,23,42,0.85) !important;
 }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary .display-6.text-success,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card .text-success { color: #4ade80 !important; }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary .display-6.text-danger,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card .text-danger { color: #f87171 !important; }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary .display-6.text-warning,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card .text-warning { color: #fbbf24 !important; }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary .display-6.text-primary,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card .text-primary { color: #60a5fa !important; }
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .stat-card-summary .small.text-muted,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .member-stat-card .small.text-muted,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page > div > div > small.text-muted,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .text-muted,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page h6.fw-bold.text-muted.text-uppercase.small {
+    color: #94a3b8 !important;
+}
+
+/* FILTER FORM */
 [data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .daily-filter-form,
 [data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .monthly-filter-form {
     background: linear-gradient(180deg, rgba(96,165,250,0.08) 0%, rgba(96,165,250,0.02) 100%) !important;
     border-color: rgba(96,165,250,0.22) !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .daily-filter-form .fw-bold.text-muted,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .monthly-filter-form .fw-bold.text-muted {
+    color: #cbd5e1 !important;
+}
+
+/* BADGE DARK MODE OVERRIDE */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .badge.bg-light.text-dark,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .badge.bg-warning.text-dark {
+    background: rgba(148,163,184,0.18) !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(96,165,250,0.22) !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .badge.bg-warning.text-dark {
+    background: rgba(245,158,11,0.18) !important;
+    color: #fbbf24 !important;
+}
+
+/* SEGMEN CARD HR DIVIDER */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .segment-card hr {
+    border-top-color: rgba(96,165,250,0.22) !important;
+    opacity: 1 !important;
+}
+
+/* MEMBER STAT CARD WARNA NOMINAL DARK */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .member-stat-card .display-6 {
+    color: #f1f5f9 !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .member-stat-card .small.text-uppercase.fw-bold {
+    color: #cbd5e1 !important;
+}
+
+/* PROGRESS BAR DARK */
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .progress {
+    background: rgba(71,85,105,0.5) !important;
+}
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page .wash-reports-page > div > h4.mb-0,
+[data-bs-theme="dark"] #page-content-wrapper .wash-reports-page > div > h4.mb-0.fw-bold {
+    color: #f1f5f9 !important;
 }
 </style>
 <div class="container-fluid py-4 wash-reports-page">
@@ -525,7 +678,7 @@ body #page-content-wrapper .wash-reports-page > div.card,
     <!-- JUDUL & AKSI -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">
+            <h4 class="mb-0 fw-bold">
                 <i class="bi bi-graph-up-arrow text-primary me-2"></i>Laporan Keuangan Wash
             </h4>
             <small class="text-muted">Data transaksi wash + komisi operator</small>
