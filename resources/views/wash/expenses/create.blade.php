@@ -316,6 +316,11 @@
 
 @push('scripts')
 <script>
+    // ⚠️ Inject PHP state ke JS global scope (aman via @json / json_encode)
+    const WASH_EXPENSE_INIT = {
+        isStockCategory: @json($isStockCategory ?? false),
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         const expenseGroupSelect = document.getElementById('expenseGroupSelect');
         const stockSection = document.querySelector('.stock-section');
@@ -331,6 +336,20 @@
         const newStockPreview = document.getElementById('newStockPreview');
         const submitBtn = document.getElementById('submitBtn');
         const form = document.getElementById('createExpenseForm');
+
+        // 🔧 DEFINE isStockCategory di LOCAL SCOPE JS (FIX ReferenceError!)
+        // Primary: dari selected option di DOM (paling akurat), fallback: dari PHP init.
+        let isStockCategory = false;
+        try {
+            const selOpt = expenseGroupSelect && expenseGroupSelect.options[expenseGroupSelect.selectedIndex];
+            if (selOpt && typeof selOpt.dataset !== 'undefined' && selOpt.dataset.isStock !== undefined) {
+                isStockCategory = selOpt.dataset.isStock === '1';
+            } else {
+                isStockCategory = !!WASH_EXPENSE_INIT.isStockCategory;
+            }
+        } catch (e) {
+            isStockCategory = !!WASH_EXPENSE_INIT.isStockCategory;
+        }
 
         const rupiahFormatter = new Intl.NumberFormat('id-ID', {
             minimumFractionDigits: 0,
@@ -380,6 +399,9 @@
         function handleCategoryChange() {
             const selectedOption = expenseGroupSelect.options[expenseGroupSelect.selectedIndex];
             const isStock = selectedOption.dataset.isStock === '1';
+
+            // 🔧 UPDATE global scope isStockCategory (supaya tetap sinkron usah user ganti kategori)
+            isStockCategory = isStock;
             
             stockSection.style.display = isStock ? 'block' : 'none';
 
