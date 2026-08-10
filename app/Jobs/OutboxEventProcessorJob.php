@@ -26,7 +26,7 @@ class OutboxEventProcessorJob implements ShouldQueue
 
     public function handle(): void
     {
-        $outboxEvent = OutboxEvent::findOrFail($this->outboxEventId);
+        $outboxEvent = OutboxEvent::withoutGlobalScopes()->findOrFail($this->outboxEventId);
 
         if ($outboxEvent->status === 'processed') {
             return;

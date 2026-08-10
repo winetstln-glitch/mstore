@@ -46,11 +46,9 @@ class BillingService
                 $price = (int) $pkg->price;
             }
         }
-        if ($price === 100000 && $customer->package) {
-            if (preg_match('/(\d+)/', str_replace('.', '', $customer->package), $matches)) {
-                $price = (int) $matches[1];
-            }
-        }
+        // Hapus fallback regex dari nama paket: terlalu tidak andal karena bisa menangkap
+        // angka kecepatan (misal 50 dari "50Mbps") alih-alih harga yang sebenarnya.
+        // Harga default Rp 100.000 digunakan jika package_id tidak ditemukan.
 
         $invoice = Invoice::create([
             'user_id' => $customer->user_id,
@@ -112,6 +110,7 @@ class BillingService
         $overdueInvoices = Invoice::where('status', 'pending')
             ->whereDate('due_date', '<', Carbon::today())
             ->get();
+
         foreach ($overdueInvoices as $invoice) {
             $customer = $this->findCustomerByInvoice($invoice);
             if (! $customer) {
@@ -119,15 +118,19 @@ class BillingService
             }
 
             if ($customer->status === 'active' && $customer->auto_isolate) {
-                $customer->update(['status' => 'suspend']);
+                DB::transaction(function () use ($customer, $invoice) {
+                    $customer->update(['status' => 'suspend']);
+
+                    $meta = $invoice->meta ?? [];
+                    if (! is_array($meta)) {
+                        $meta = [];
+                    }
+                    $meta['overdue_checked_at'] = Carbon::now()->toDateTimeString();
+                    $invoice->update(['meta' => $meta]);
+                });
+
+                // Event dikirim setelah transaksi commit agar tidak trigger di-rollback
                 event(new CustomerSuspended($customer));
-                
-                $meta = $invoice->meta ?? [];
-                if (! is_array($meta)) {
-                    $meta = [];
-                }
-                $meta['overdue_checked_at'] = Carbon::now()->toDateTimeString();
-                $invoice->update(['meta' => $meta]);
             }
         }
     }

@@ -874,10 +874,12 @@ body #page-content-wrapper .wash-reports-page > div.card,
                             <table class="table table-sm table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 8%;" class="text-center">No</th>
-                                        <th style="width: 52%;">Nama Karyawan</th>
-                                        <th class="text-center" style="width: 20%;">Item Dikerjakan</th>
-                                        <th class="text-end" style="width: 20%;">Komisi</th>
+                                        <th style="width: 5%;" class="text-center">No</th>
+                                        <th style="width: 25%;">Nama Karyawan</th>
+                                        <th style="width: 30%;">Layanan</th>
+                                        <th class="text-end" style="width: 15%;">Harga Potongan</th>
+                                        <th class="text-center" style="width: 10%;">Qty</th>
+                                        <th class="text-end" style="width: 15%;">Total Komisi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -885,14 +887,16 @@ body #page-content-wrapper .wash-reports-page > div.card,
                                     <tr>
                                         <td class="text-center">{{ $idx + 1 }}</td>
                                         <td><i class="bi bi-person-circle me-2 text-muted"></i>{{ $d->name }}</td>
-                                        <td class="text-center"><span class="badge bg-light text-dark">{{ number_format((int)$d->item_count,0,',','.') }} item</span></td>
+                                        <td>{{ $d->service_name }}</td>
+                                        <td class="text-end text-muted">Rp {{ number_format((int)$d->rate_per_unit,0,',','.') }}</td>
+                                        <td class="text-center"><span class="badge bg-light text-dark">{{ number_format((int)$d->item_count,0,',','.') }}</span></td>
                                         <td class="text-end fw-semibold text-danger">Rp {{ number_format((int)$d->total_commission,0,',','.') }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot>
                                     <tr class="table-warning fw-bold">
-                                        <td colspan="3" class="text-end">TOTAL POTONGAN KOMISI &rarr;</td>
+                                        <td colspan="5" class="text-end">TOTAL POTONGAN KOMISI &rarr;</td>
                                         <td class="text-end text-danger">- Rp {{ number_format($dailyCommission,0,',','.') }}</td>
                                     </tr>
                                 </tfoot>

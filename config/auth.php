@@ -14,9 +14,22 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
+        'guard'     => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin Roles
+    |--------------------------------------------------------------------------
+    |
+    | Daftar nama role yang dianggap sebagai super-admin dan mendapat bypass
+    | pada semua permission check. Digunakan oleh CheckPermission middleware.
+    | Untuk mengubah, sesuaikan array ini — tidak perlu modifikasi kode.
+    |
+    */
+
+    'super_admin_roles' => ['admin', 'direktur', 'hrd-manager'],
 
     /*
     |--------------------------------------------------------------------------

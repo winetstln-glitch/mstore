@@ -252,13 +252,7 @@ if (app()->environment('local')) {
     });
 }
 
-Route::get('/test', function () {
-    return view('test');
-});
-
-Route::get('/test-livewire', function () {
-    return \Livewire\Livewire::mount('isp.pppoe-user.index');
-});
+// Route /test dan /test-livewire telah dihapus — tidak digunakan di production.
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/internet', [LandingController::class, 'showService'])
     ->defaults('service', 'internet')
@@ -604,43 +598,43 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::resource('leave-requests', \App\Http\Controllers\LeaveRequestController::class)->except(['create', 'show', 'edit', 'destroy', 'index']);
 
     // Network & Infrastructure
-   Route::prefix('olt')->name('olt.')->group(function () {
+    Route::prefix('olt')->name('olt.')->group(function () {
 
-    // ===== CRUD =====
-    Route::get('/', [OLTController::class, 'index'])->middleware('permission:olt.view')->name('index');
-    Route::get('/create', [OLTController::class, 'create'])->name('create');
-    Route::post('/', [OLTController::class, 'store'])->name('store');
-    Route::post('/{olt}/poll', [OltController::class, 'poll'])->name('poll');
-    Route::get('/{olt}', [OLTController::class, 'show'])->name('show');
-    Route::get('/{olt}/edit', [OLTController::class, 'edit'])->name('edit');
-    Route::put('/{olt}', [OLTController::class, 'update'])->name('update');
-    Route::delete('/{olt}', [OLTController::class, 'destroy'])->name('destroy');
+        // ===== CRUD =====
+        Route::get('/', [OLTController::class, 'index'])->middleware('permission:olt.view')->name('index');
+        Route::get('/create', [OLTController::class, 'create'])->name('create');
+        Route::post('/', [OLTController::class, 'store'])->name('store');
+        Route::get('/{olt}', [OLTController::class, 'show'])->name('show');
+        Route::get('/{olt}/edit', [OLTController::class, 'edit'])->name('edit');
+        Route::put('/{olt}', [OLTController::class, 'update'])->name('update');
+        Route::delete('/{olt}', [OLTController::class, 'destroy'])->name('destroy');
 
-    // ===== Status & Connection =====
-    Route::post('/batch-check-status', [OLTController::class, 'batchCheckStatus'])->name('batch_check_status');
-    Route::post('/test-connection', [OLTController::class, 'testConnection'])->name('test_connection');
-    Route::get('/{olt}/check-status', [OLTController::class, 'checkStatus'])->name('check_status');
-    Route::get('/{olt}/system-info', [OLTController::class, 'systemInfo'])->name('system_info');
-    Route::post('/{olt}/poll', [OLTController::class, 'poll'])->name('poll');
+        // ===== Status & Connection =====
+        Route::post('/batch-check-status', [OLTController::class, 'batchCheckStatus'])->name('batch_check_status');
+        Route::post('/test-connection', [OLTController::class, 'testConnection'])->name('test_connection');
+        Route::get('/{olt}/check-status', [OLTController::class, 'checkStatus'])->name('check_status');
+        Route::get('/{olt}/system-info', [OLTController::class, 'systemInfo'])->name('system_info');
+        // Route poll tunggal — duplikat dengan OltController (invalid) telah dihapus
+        Route::post('/{olt}/poll', [OLTController::class, 'poll'])->name('poll');
 
-    // ===== ONU Operations =====
-    Route::get('/{olt}/onus', [OLTController::class, 'filterOnus'])->name('onts');
-    Route::get('/{olt}/onus/filter', [OLTController::class, 'filterOnus'])->name('onus.filter');
-    Route::post('/{olt}/onus/sync', [OLTController::class, 'syncOnus'])->name('onus.sync');
-    Route::put('/onu/{onu}', [OLTController::class, 'updateOnu'])->name('onu.update');
-    Route::delete('/onu/{onu}', [OLTController::class, 'destroyOnu'])->name('onu.destroy');
-    Route::get('/onu/{onu}/detail', function($onu) {
-        $ont = \App\Models\ONT::with(['olt', 'port'])->findOrFail($onu);
-        return view('olt.onus.show', compact('ont'));
-    })->name('onu.detail');
-    Route::get('/ont/{onu}', function($onu) {
-        $ont = \App\Models\ONT::findOrFail($onu);
-        return redirect()->route('olt.show', $ont->olt_id);
-    })->name('ont.detail');
-    Route::post('/ont/{onu}/reboot', function($onu) {
-        return response()->json(['success' => true, 'message' => 'Reboot ONT not implemented yet']);
-    })->name('ont.reboot');
-});
+        // ===== ONU Operations =====
+        Route::get('/{olt}/onus', [OLTController::class, 'filterOnus'])->name('onts');
+        Route::get('/{olt}/onus/filter', [OLTController::class, 'filterOnus'])->name('onus.filter');
+        Route::post('/{olt}/onus/sync', [OLTController::class, 'syncOnus'])->name('onus.sync');
+        Route::put('/onu/{onu}', [OLTController::class, 'updateOnu'])->name('onu.update');
+        Route::delete('/onu/{onu}', [OLTController::class, 'destroyOnu'])->name('onu.destroy');
+        Route::get('/onu/{onu}/detail', function ($onu) {
+            $ont = \App\Models\ONT::with(['olt', 'port'])->findOrFail($onu);
+            return view('olt.onus.show', compact('ont'));
+        })->name('onu.detail');
+        Route::get('/ont/{onu}', function ($onu) {
+            $ont = \App\Models\ONT::findOrFail($onu);
+            return redirect()->route('olt.show', $ont->olt_id);
+        })->name('ont.detail');
+        Route::post('/ont/{onu}/reboot', function ($onu) {
+            return response()->json(['success' => true, 'message' => 'Reboot ONT not implemented yet']);
+        })->name('ont.reboot');
+    });
     // ... kode router lainnya ...
     Route::post('routers/{router}/pppoe/disconnect', [RouterController::class, 'disconnectPppoe'])->name('routers.pppoe.disconnect');
 
@@ -1181,8 +1175,8 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
                 'movements_count' => $movementsCollection->count(),
                 'first_movement' => $movementsCollection->first()?->toArray()
             ]);
-        })->middleware('auth')->name('cash-movements.debug');
-        
+        })->middleware(['auth', 'permission:atk.view'])->name('cash-movements.debug');
+
         Route::get('/guide', function () {
             return view('atk.guide');
         })->middleware('permission:atk.view')->name('guide');

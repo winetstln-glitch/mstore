@@ -80,19 +80,48 @@ class RunDiagnosticAction
         try {
             $this->assignmentService->autoAssign($ticket);
         } catch (\Exception $e) {
-            Log::error("Failed to auto assign technician: " . $e->getMessage());
+            Log::error('Failed to auto assign technician for ticket #'.$ticket->id.': '.$e->getMessage(), [
+                'ticket_id'   => $ticket->id,
+                'customer_id' => $customer->id,
+                'exception'   => $e->getMessage(),
+            ]);
+
+            // Notifikasi administrator bahwa ticket tidak ter-assign
+            $this->notifyAdminsAboutUnassignedTicket($ticket, $e->getMessage());
         }
 
         return $ticket;
     }
 
+    /**
+     * Kirim notifikasi ke administrator bahwa ticket gagal di-assign ke technician.
+     */
+    protected function notifyAdminsAboutUnassignedTicket(Ticket $ticket, string $reason): void
+    {
+        try {
+            // Ambil semua user dengan role admin atau direktur
+            $admins = \App\Models\User::whereHas('role', function ($q) {
+                $q->whereIn('name', ['admin', 'direktur']);
+            })->get();
+
+            foreach ($admins as $admin) {
+                $admin->notify(new \App\Notifications\TicketAssignedNotification(
+                    $ticket,
+                    'Ticket #'.$ticket->id.' gagal di-auto-assign: '.$reason.'. Harap assign manual.'
+                ));
+            }
+        } catch (\Exception $notifyEx) {
+            Log::error('Gagal mengirim notifikasi unassigned ticket ke admin: '.$notifyEx->getMessage());
+        }
+    }
+
     protected function mapCategory($diagnostic): string
     {
         $map = [
-            'onu_los' => 'ONU',
+            'onu_los'    => 'ONU',
             'onu_offline' => 'ONU',
             'pppoe_issue' => 'PPPoE',
-            'wifi' => 'Hotspot',
+            'wifi'       => 'Hotspot',
         ];
 
         $checks = $diagnostic->checks;

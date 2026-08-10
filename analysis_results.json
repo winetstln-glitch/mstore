@@ -1,0 +1,3692 @@
+{
+    "models": [
+        {
+            "file": "Account.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "AgentDeposit.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Alarm.php",
+            "table": "alarms",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "olt (belongsTo)",
+                "ont (belongsTo)",
+                "acknowledgedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ApiKey.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "AreaOutage.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "odp (belongsTo)",
+                "olt (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Asset.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "item (belongsTo)",
+                "holder (morphTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AssetCategory.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkCashMovement.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "cash (belongsTo)",
+                "atkTransaction (belongsTo)",
+                "register (belongsTo)",
+                "creator (belongsTo)",
+                "reversedBy (belongsTo)",
+                "reversalOf (belongsTo)",
+                "reversal (hasOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkCashRegister.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "movements (hasMany)",
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkCategory.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "products (hasMany)",
+                "parent (belongsTo)",
+                "children (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkCustomer.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkFloatAccount.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkFloatTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "account (belongsTo)",
+                "creator (belongsTo)",
+                "reversedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkProduct.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "categoryModel (belongsTo)",
+                "supplier (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkService.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkSupplier.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "products (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "items (hasMany)",
+                "user (belongsTo)",
+                "coordinator (belongsTo)",
+                "floatAccount (belongsTo)",
+                "customer (belongsTo)",
+                "cashMovements (hasMany)",
+                "generalTransactions (morphMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AtkTransactionItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "product (belongsTo)",
+                "service (belongsTo)",
+                "atkTransaction (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "AuditLog.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Bandwidth.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Branch.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "generalTransactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Brand.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "BusinessUnit.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "branches (hasMany)",
+                "profitCenters (hasMany)",
+                "generalTransactions (hasMany)",
+                "expenses (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Cash.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Category.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "CctvBooking.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "package (belongsTo)",
+                "surveys (hasMany)",
+                "installation (hasOne)",
+                "payments (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CctvInstallation.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "booking (belongsTo)",
+                "technician (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CctvPackage.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "bookings (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CctvPayment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "booking (belongsTo)",
+                "paymentTransaction (morphOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CctvSurvey.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "booking (belongsTo)",
+                "surveyor (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ChatMessage.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "thread (belongsTo)",
+                "sender (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ChatThread.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "userOne (belongsTo)",
+                "userTwo (belongsTo)",
+                "messages (hasMany)",
+                "latestMessage (hasOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Closure.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "odc (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Company.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "branches (hasMany)",
+                "generalTransactions (hasMany)",
+                "journals (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CompanyBranch.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "company (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ConsolidationItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "report (belongsTo)",
+                "company (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ConsolidationReport.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "items (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Coordinator.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "region (belongsTo)",
+                "router (belongsTo)",
+                "tickets (hasMany)",
+                "investors (hasMany)",
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CostCenter.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "profitCenter (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "CrmLead.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Customer.php",
+            "table": null,
+            "fillable": false,
+            "guarded": true,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "package (belongsTo)",
+                "odp (belongsTo)",
+                "htb (belongsTo)",
+                "networkDiagnostics (hasMany)",
+                "olt (belongsTo)",
+                "invoices (hasMany)",
+                "tickets (hasMany)",
+                "installations (hasMany)",
+                "genieStatus (hasOne)",
+                "invoicesByUser (hasMany)",
+                "router (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "DailySummary.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "branch (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Device.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Employee.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "washEmployee (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "EscalationNotification.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ticket (belongsTo)",
+                "rule (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Expense.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "branch (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)",
+                "category (belongsTo)",
+                "items (hasMany)",
+                "approvals (hasMany)",
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)",
+                "generalTransactions (morphMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ExpenseApproval.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "expense (belongsTo)",
+                "approvedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ExpenseCategory.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "account (belongsTo)",
+                "expenses (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ExpenseItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "expense (belongsTo)",
+                "account (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "FeeLog.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "profile (belongsTo)",
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "FeeProfile.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "tiers (hasMany)",
+                "feeLogs (hasMany)",
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "FeeTier.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "profile (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "FiberPlan.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "olt (belongsTo)",
+                "items (hasMany)",
+                "creator (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "FiberPlanItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "fiberPlan (belongsTo)",
+                "inventoryItem (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "GeneralTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "branch (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)",
+                "reference (morphTo)",
+                "createdBy (belongsTo)",
+                "approvedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "GenieAcsDeviceSetting.php",
+            "table": "genieacs_device_settings",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "GenieAcsServer.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "GenieDeviceStatus.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "HotspotBanner.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "HotspotProfile.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "router (belongsTo)",
+                "vouchers (hasMany)",
+                "washMemberPackages (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Htb.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "odp (belongsTo)",
+                "parent (belongsTo)",
+                "children (hasMany)",
+                "customers (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Installation.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "technician (belongsTo)",
+                "modemRecord (hasOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "IntercompanyTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "fromCompany (belongsTo)",
+                "toCompany (belongsTo)",
+                "fromJournal (belongsTo)",
+                "toJournal (belongsTo)",
+                "source (morphTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "InventoryItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "transactions (hasMany)",
+                "assets (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "InventoryTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "coordinator (belongsTo)",
+                "item (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Investor.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "coordinator (belongsTo)",
+                "transactions (hasMany)",
+                "incomeTransactions (hasMany)",
+                "expenseTransactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Invoice.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "generalTransactions (morphMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Journal.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "entries (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "JournalEntry.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "journal (belongsTo)",
+                "reversalOf (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "KasbonInstallment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "kasbonLoan (belongsTo)",
+                "salaryAdjustment (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "KasbonLoan.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "installments (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "KnowledgeBase.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)",
+                "categoryModel (belongsTo)",
+                "tags (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "KnowledgeBaseCategory.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "documents (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "KnowledgeBaseTag.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "documents (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "LeaveRequest.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "approver (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "LoyaltyLog.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "MapConnection.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "ModemDataRecord.php",
+            "table": null,
+            "fillable": false,
+            "guarded": true,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "customer (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "MonthlySummary.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "branch (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Nas.php",
+            "table": "nas",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "NetworkDiagnostic.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "ticket (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "NetworkIncident.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "olt (belongsTo)",
+                "odp (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "NocMetricSnapshot.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Odc.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "olt (belongsTo)",
+                "odps (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Odp.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "region (belongsTo)",
+                "odc (belongsTo)",
+                "customers (hasMany)",
+                "htbs (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "OLT.php",
+            "table": "olts",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "onts (hasMany)",
+                "ports (hasMany)",
+                "alarms (hasMany)",
+                "pollingLogs (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "OLTPort.php",
+            "table": "olt_ports",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "olt (belongsTo)",
+                "onts (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ONT.php",
+            "table": "onus",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "olt (belongsTo)",
+                "port (belongsTo)",
+                "alarms (hasMany)",
+                "opticalHistory (hasMany)",
+                "trafficHistory (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "OntOpticalHistory.php",
+            "table": "ont_optical_history",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ont (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "OntTrafficHistory.php",
+            "table": "ont_traffic_history",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ont (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Onu.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "olt (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "OpeningBalance.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "OutboxEvent.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "OwnerFund.php",
+            "table": "owner_funds",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "creator (belongsTo)",
+                "approver (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Package.php",
+            "table": null,
+            "fillable": false,
+            "guarded": true,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "bandwidth (belongsTo)",
+                "customers (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "PaymentTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "paymentable (morphTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "PaymentVoucher.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "transaction (belongsTo)",
+                "creator (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Period.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Permission.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "roles (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "PollingLog.php",
+            "table": "polling_logs",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "olt (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "PppoeProfile.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "ProfitCenter.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "costCenters (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "PublicHoliday.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "createdBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "RadAcct.php",
+            "table": "radacct",
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "RadCheck.php",
+            "table": "radcheck",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "RadGroupCheck.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "RadGroupReply.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "RadReply.php",
+            "table": "radreply",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "RadUserGroup.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Receipt.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "template (belongsTo)",
+                "activityLogs (hasMany)",
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ReceiptActivityLog.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "receipt (belongsTo)",
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ReceiptTemplate.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "receipts (hasMany)",
+                "createdBy (belongsTo)",
+                "updatedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "ReconciliationReport.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "items (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Region.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "coordinators (hasMany)",
+                "odps (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Role.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "users (hasMany)",
+                "permissions (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Router.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "vpnAccount (belongsTo)",
+                "customers (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "SalaryAdjustment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "SchedulePeriod.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "CompanyScope.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "Setting.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "SlaBreach.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ticket (belongsTo)",
+                "rule (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "SlaRule.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "breaches (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "TechnicianAssignment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ticket (belongsTo)",
+                "technician (belongsTo)",
+                "assignedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "TechnicianAttendance.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "editedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "TechnicianDailySchedule.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "TechnicianSchedule.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Ticket.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "odp (belongsTo)",
+                "coordinator (belongsTo)",
+                "technicians (belongsTo)",
+                "logs (hasMany)",
+                "diagnostic (belongsTo)",
+                "technicianAssignments (hasMany)",
+                "inventoryTransactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "TicketLog.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "ticket (belongsTo)",
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "BelongsToCompany.php",
+            "table": null,
+            "fillable": false,
+            "guarded": false,
+            "mass_assignment_risk": true,
+            "relationships": [
+                "company (belongsTo)",
+                "companyBranch (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Transaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "coordinator (belongsTo)",
+                "investor (belongsTo)",
+                "washStockMovement (hasOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "User.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "role (belongsTo)",
+                "company (belongsTo)",
+                "companyBranch (belongsTo)",
+                "employee (hasOne)",
+                "coordinator (hasOne)",
+                "customer (hasOne)",
+                "washEmployee (hasOne)",
+                "assignedTickets (belongsTo)",
+                "tickets (belongsTo)",
+                "installations (hasMany)",
+                "invoices (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "Voucher.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "batch (belongsTo)",
+                "hotspotProfile (belongsTo)",
+                "router (belongsTo)",
+                "invoice (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "VoucherBatch.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "vouchers (hasMany)",
+                "creator (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "VoucherPayment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "voucherTemplate (belongsTo)",
+                "hotspotProfile (belongsTo)",
+                "voucher (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "VoucherTemplate.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "VpnAccount.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "server (belongsTo)",
+                "router (belongsTo)",
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "VpnServer.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "vpnAccounts (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashCashMovement.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "cashRegister (belongsTo)",
+                "user (belongsTo)",
+                "shiftSession (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashCashRegister.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "sessions (hasMany)",
+                "cashMovements (hasMany)",
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashCommissionEarning.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "employee (belongsTo)",
+                "transactionItem (belongsTo)",
+                "transaction (belongsTo)",
+                "paidReference (morphTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashCustomer.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "transactions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashDailyClosing.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "closedBy (belongsTo)",
+                "approvedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashEmployee.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashLoyaltyCounter.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "member (belongsTo)",
+                "lastPaidTransaction (belongsTo)",
+                "vouchers (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMember.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "level (belongsTo)",
+                "vehicles (hasMany)",
+                "card (hasOne)",
+                "transactions (hasMany)",
+                "subscriptions (hasMany)",
+                "pointTransactions (hasMany)",
+                "loyaltyCounter (hasOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMemberCard.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "member (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMemberLevel.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "members (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMemberPackage.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "subscriptions (hasMany)",
+                "hotspotProfile (belongsTo)",
+                "router (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMemberSubscription.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "member (belongsTo)",
+                "package (belongsTo)",
+                "transaction (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashMemberVehicle.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "member (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashPointTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "member (belongsTo)",
+                "customer (belongsTo)",
+                "transaction (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashReward.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "WashRewardRedemption.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "voucher (belongsTo)",
+                "transaction (belongsTo)",
+                "redeemedBy (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashRewardVoucher.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "counter (belongsTo)",
+                "customer (belongsTo)",
+                "member (belongsTo)",
+                "usedTransaction (belongsTo)",
+                "redemptions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashService.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "priceRules (hasMany)",
+                "stockItem (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashServicePriceRule.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "service (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashShift.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "sessions (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashShiftSession.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "shift (belongsTo)",
+                "user (belongsTo)",
+                "cashRegister (belongsTo)",
+                "transactions (hasMany)",
+                "cashMovements (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashStockItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "movements (hasMany)",
+                "supplier (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashStockMovement.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "stockItem (belongsTo)",
+                "transaction (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashSupplier.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "stockItems (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashTransaction.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "kasbonUser (belongsTo)",
+                "items (hasMany)",
+                "user (belongsTo)",
+                "washCustomer (belongsTo)",
+                "member (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)",
+                "shiftSession (belongsTo)",
+                "cashRegister (belongsTo)",
+                "pointTransactions (hasMany)",
+                "redemption (hasOne)",
+                "generalTransactions (morphMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WashTransactionItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "transaction (belongsTo)",
+                "service (belongsTo)",
+                "employee (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WeddingBooking.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "customer (belongsTo)",
+                "package (belongsTo)",
+                "payments (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WeddingGalleryItem.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "WeddingPackage.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "bookings (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WeddingPayment.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "booking (belongsTo)",
+                "paymentTransaction (morphOne)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppAnalyticsEvent.php",
+            "table": "whatsapp_analytics_events",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "session (belongsTo)",
+                "ticket (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppConversation.php",
+            "table": "whatsapp_conversations",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "assignedCs (belongsTo)",
+                "messages (hasMany)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppGroup.php",
+            "table": "whatsapp_groups",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppLog.php",
+            "table": "whatsapp_logs",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "user (belongsTo)",
+                "customer (belongsTo)"
+            ],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppMenu.php",
+            "table": "whatsapp_menus",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "WhatsAppSession.php",
+            "table": "whatsapp_sessions",
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [],
+            "eager_loading": []
+        },
+        {
+            "file": "YearlySummary.php",
+            "table": null,
+            "fillable": true,
+            "guarded": false,
+            "mass_assignment_risk": false,
+            "relationships": [
+                "businessUnit (belongsTo)",
+                "branch (belongsTo)",
+                "profitCenter (belongsTo)",
+                "costCenter (belongsTo)"
+            ],
+            "eager_loading": []
+        }
+    ],
+    "migrations": {
+        "roles": {
+            "file": "0000_00_00_000000_create_roles_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "users": {
+            "file": "0001_01_01_000000_create_users_table.php",
+            "fks": [
+                "role_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "password_reset_tokens": {
+            "file": "0001_01_01_000000_create_users_table.php",
+            "fks": [
+                "role_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "sessions": {
+            "file": "0001_01_01_000000_create_users_table.php",
+            "fks": [
+                "role_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "cache": {
+            "file": "0001_01_01_000001_create_cache_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "cache_locks": {
+            "file": "0001_01_01_000001_create_cache_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "jobs": {
+            "file": "0001_01_01_000002_create_jobs_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "job_batches": {
+            "file": "0001_01_01_000002_create_jobs_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "failed_jobs": {
+            "file": "0001_01_01_000002_create_jobs_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "customers": {
+            "file": "2026_01_08_150623_create_customers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "devices": {
+            "file": "2026_01_08_150623_create_devices_table.php",
+            "fks": [
+                "customer_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "installations": {
+            "file": "2026_01_08_150624_create_installations_table.php",
+            "fks": [
+                "customer_id",
+                "technician_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "tickets": {
+            "file": "2026_01_08_150624_create_tickets_table.php",
+            "fks": [
+                "customer_id",
+                "technician_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "ticket_logs": {
+            "file": "2026_01_08_150625_create_ticket_logs_table.php",
+            "fks": [
+                "ticket_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "personal_access_tokens": {
+            "file": "2026_01_08_151140_create_personal_access_tokens_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "routers": {
+            "file": "2026_01_08_173832_create_routers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "genie_acs_servers": {
+            "file": "2026_01_08_175803_create_genie_acs_servers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "invoices": {
+            "file": "2026_02_19_000001_create_invoices_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "transactions": {
+            "file": "2026_01_12_230309_create_finance_transactions_table.php",
+            "fks": [
+                "user_id",
+                "coordinator_id",
+                "coordinator_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "technician_attendances": {
+            "file": "2026_01_09_000000_upgrade_to_full_version.php",
+            "fks": [
+                "customer_id",
+                "invoice_id",
+                "user_id",
+                "user_id",
+                "customer_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "notification_logs": {
+            "file": "2026_01_09_000000_upgrade_to_full_version.php",
+            "fks": [
+                "customer_id",
+                "invoice_id",
+                "user_id",
+                "user_id",
+                "customer_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "permissions": {
+            "file": "2026_01_09_200000_create_permissions_table.php",
+            "fks": [
+                "role_id",
+                "permission_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "permission_role": {
+            "file": "2026_01_09_200000_create_permissions_table.php",
+            "fks": [
+                "role_id",
+                "permission_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "settings": {
+            "file": "2026_01_09_223240_create_settings_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "olts": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "onus": {
+            "file": "2026_01_09_232909_create_onus_table.php",
+            "fks": [
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "odps": {
+            "file": "2026_01_10_190734_create_odps_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "genieacs_device_settings": {
+            "file": "2026_01_10_235854_create_genieacs_device_settings_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "api_keys": {
+            "file": "2026_01_11_130559_create_api_keys_tablemin.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "notifications": {
+            "file": "2026_01_11_235945_create_notifications_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "regions": {
+            "file": "2026_01_12_013619_create_regions_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "coordinators": {
+            "file": "2026_01_12_013620_create_coordinators_table.php",
+            "fks": [
+                "region_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "technician_schedules": {
+            "file": "2026_01_12_112747_create_technician_schedules_and_leave_requests_tables.php",
+            "fks": [
+                "user_id",
+                "user_id",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "leave_requests": {
+            "file": "2026_01_12_112747_create_technician_schedules_and_leave_requests_tables.php",
+            "fks": [
+                "user_id",
+                "user_id",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "schedule_periods": {
+            "file": "2026_01_12_113849_create_schedule_periods_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "inventory_items": {
+            "file": "2026_01_12_224726_create_inventory_items_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "inventory_transactions": {
+            "file": "2026_01_12_224743_create_inventory_transactions_table.php",
+            "fks": [
+                "user_id",
+                "inventory_item_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "ticket_user": {
+            "file": "2026_01_13_000006_create_ticket_technician_pivot_table.php",
+            "fks": [
+                "ticket_id",
+                "user_id",
+                "technician_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "odcs": {
+            "file": "2026_01_13_000007_create_odcs_and_update_topology.php",
+            "fks": [
+                "olt_id",
+                "odc_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "investors": {
+            "file": "2026_01_13_234322_create_investors_table.php",
+            "fks": [
+                "coordinator_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "packages": {
+            "file": "2026_01_15_200000_create_packages_table.php",
+            "fks": [
+                "package_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "htbs": {
+            "file": "2026_01_22_005852_create_htbs_table.php",
+            "fks": [
+                "odp_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "asset_categories": {
+            "file": "2026_01_23_124323_create_asset_categories_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "brands": {
+            "file": "2026_01_23_124330_create_brands_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "assets": {
+            "file": "2026_01_23_130505_create_assets_table.php",
+            "fks": [
+                "inventory_item_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "salary_adjustments": {
+            "file": "2026_01_25_000109_create_salary_adjustments_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "map_connections": {
+            "file": "2026_01_27_183458_create_map_connections_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "hotspot_profiles": {
+            "file": "2026_01_28_002546_create_hotspot_profiles_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "pppoe_profiles": {
+            "file": "2026_01_28_002554_create_pppoe_profiles_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "vouchers": {
+            "file": "2026_01_28_002605_create_vouchers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "radius_tables": {
+            "file": "2026_01_28_004416_create_radius_tables.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "bandwidths": {
+            "file": "2026_01_28_012849_create_bandwidths_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "voucher_templates": {
+            "file": "2026_01_28_152108_create_voucher_templates_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_transactions": {
+            "file": "2026_01_28_155155_create_atk_transactions_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_transaction_items": {
+            "file": "2026_01_28_155156_create_atk_transaction_items_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_services": {
+            "file": "2026_02_01_140000_create_wash_module_tables_properly.php",
+            "fks": [
+                "user_id",
+                "wash_transaction_id",
+                "wash_service_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_transactions": {
+            "file": "2026_02_01_140000_create_wash_module_tables_properly.php",
+            "fks": [
+                "user_id",
+                "wash_transaction_id",
+                "wash_service_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_transaction_items": {
+            "file": "2026_02_01_140000_create_wash_module_tables_properly.php",
+            "fks": [
+                "user_id",
+                "wash_transaction_id",
+                "wash_service_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "genie_device_statuses": {
+            "file": "2026_01_29_131127_create_genie_device_statuses_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "closures": {
+            "file": "2026_02_02_000000_create_closures_table_properly.php",
+            "fks": [
+                "odc_id",
+                "region_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_employees": {
+            "file": "2026_02_01_130143_create_wash_employees_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_customers": {
+            "file": "2026_02_08_000002_create_wash_customers_and_update_transactions.php",
+            "fks": [
+                "wash_customer_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_products": {
+            "file": "2026_02_10_144527_create_atk_products_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "cashes": {
+            "file": "2026_02_12_121000_create_cashes_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "agent_deposits": {
+            "file": "2026_02_12_121100_create_agent_deposits_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "accounts": {
+            "file": "2026_02_17_100000_create_accounts_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "periods": {
+            "file": "2026_02_17_100100_create_periods_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "journals": {
+            "file": "2026_02_17_100200_create_journals_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "journal_entries": {
+            "file": "2026_02_17_100300_create_journal_entries_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "opening_balances": {
+            "file": "2026_02_17_100400_create_opening_balances_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "audit_logs": {
+            "file": "2026_05_25_220000_create_audit_logs_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "vpn_servers": {
+            "file": "2026_02_22_120000_create_vpn_servers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "vpn_accounts": {
+            "file": "2026_02_22_120100_create_vpn_accounts_table.php",
+            "fks": [
+                "user_id",
+                "router_id",
+                "vpn_server_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_service_price_rules": {
+            "file": "2026_03_25_190000_create_wash_service_price_rules_table.php",
+            "fks": [
+                "wash_service_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "employees": {
+            "file": "2026_04_02_100000_create_employees_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "voucher_batches": {
+            "file": "2026_04_02_120500_create_voucher_batches_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "queue_jobs": {
+            "file": "2026_04_02_120800_create_queue_jobs_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "nas": {
+            "file": "2026_04_02_120900_create_radius_core_tables.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "radcheck": {
+            "file": "2026_04_02_120900_create_radius_core_tables.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "radreply": {
+            "file": "2026_04_02_120900_create_radius_core_tables.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "radacct": {
+            "file": "2026_04_02_120900_create_radius_core_tables.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "wash_stock_items": {
+            "file": "2026_04_03_090000_create_wash_stock_items_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "wash_stock_movements": {
+            "file": "2026_04_03_090100_create_wash_stock_movements_table.php",
+            "fks": [
+                "wash_stock_item_id",
+                "transaction_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "technician_daily_schedules": {
+            "file": "2026_04_11_000001_create_technician_daily_schedules_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "whatsapp_account_send_logs": {
+            "file": "2026_04_23_120000_create_whatsapp_account_send_logs_table.php",
+            "fks": [
+                "sender_user_id",
+                "target_user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "chat_threads": {
+            "file": "2026_04_23_230000_create_chat_threads_table.php",
+            "fks": [
+                "user_one_id",
+                "user_two_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "chat_messages": {
+            "file": "2026_04_23_230100_create_chat_messages_table.php",
+            "fks": [
+                "thread_id",
+                "sender_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "modem_data_records": {
+            "file": "2026_04_25_000001_create_modem_data_records_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "olt_ports": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "onts": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "ont_optical_history": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "ont_traffic_history": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "alarms": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "polling_logs": {
+            "file": "2026_05_18_000001_create_olts_table.php",
+            "fks": [
+                "olt_id",
+                "olt_id",
+                "olt_port_id",
+                "ont_id",
+                "ont_id",
+                "olt_id",
+                "ont_id",
+                "acknowledged_by",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "whatsapp_menus": {
+            "file": "2026_05_25_100000_create_whatsapp_menus_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "whatsapp_sessions": {
+            "file": "2026_05_25_100100_create_whatsapp_sessions_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "public_holidays": {
+            "file": "2026_05_26_233000_create_public_holidays_table.php",
+            "fks": [
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "whatsapp_logs": {
+            "file": "2026_06_03_113619_create_whats_app_logs_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "payment_vouchers": {
+            "file": "2026_06_03_120237_create_payment_vouchers_table.php",
+            "fks": [
+                "customer_id",
+                "transaction_id",
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "voucher_payments": {
+            "file": "2026_06_03_121848_create_voucher_payments_table.php",
+            "fks": [
+                "voucher_template_id",
+                "voucher_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "payment_transactions": {
+            "file": "2026_06_07_100000_create_payment_transactions_table.php",
+            "fks": [
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "area_outages": {
+            "file": "2026_06_07_100001_create_area_outages_table.php",
+            "fks": [
+                "region_id",
+                "odp_id",
+                "olt_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "network_incidents": {
+            "file": "2026_06_07_100002_create_network_incidents_table.php",
+            "fks": [
+                "region_id",
+                "olt_id",
+                "odp_id",
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "network_diagnostics": {
+            "file": "2026_06_07_100003_create_network_diagnostics_table.php",
+            "fks": [
+                "customer_id",
+                "ticket_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "technician_assignments": {
+            "file": "2026_06_07_100004_create_technician_assignments_table.php",
+            "fks": [
+                "ticket_id",
+                "technician_id",
+                "assigned_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wedding_packages": {
+            "file": "2026_06_08_000001_create_wedding_packages_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "wedding_bookings": {
+            "file": "2026_06_08_000002_create_wedding_bookings_table.php",
+            "fks": [
+                "customer_id",
+                "wedding_package_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wedding_payments": {
+            "file": "2026_06_08_000003_create_wedding_payments_table.php",
+            "fks": [
+                "wedding_booking_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "cctv_packages": {
+            "file": "2026_06_08_000004_create_cctv_packages_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "cctv_bookings": {
+            "file": "2026_06_08_000005_create_cctv_bookings_table.php",
+            "fks": [
+                "customer_id",
+                "cctv_package_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "cctv_surveys": {
+            "file": "2026_06_08_000006_create_cctv_surveys_table.php",
+            "fks": [
+                "cctv_booking_id",
+                "surveyor_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "cctv_installations": {
+            "file": "2026_06_08_000007_create_cctv_installations_table.php",
+            "fks": [
+                "cctv_booking_id",
+                "technician_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "cctv_payments": {
+            "file": "2026_06_08_000008_create_cctv_payments_table.php",
+            "fks": [
+                "cctv_booking_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "knowledge_bases": {
+            "file": "2026_06_08_100005_create_knowledge_bases_table.php",
+            "fks": [
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "sla_rules": {
+            "file": "2026_06_08_100006_create_sla_rules_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "whatsapp_analytics_logs": {
+            "file": "2026_06_08_100007_create_whatsapp_analytics_logs_table.php",
+            "fks": [
+                "customer_id",
+                "related_ticket_id",
+                "related_payment_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "noc_metric_snapshots": {
+            "file": "2026_06_08_120000_create_noc_metric_snapshots_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "whatsapp_analytics_events": {
+            "file": "2026_06_08_120010_create_whatsapp_analytics_events_table.php",
+            "fks": [
+                "whatsapp_session_id",
+                "ticket_id",
+                "payment_transaction_id",
+                "voucher_payment_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "knowledge_base_categories": {
+            "file": "2026_06_08_120020_create_knowledge_base_taxonomy_tables.php",
+            "fks": [
+                "knowledge_base_id",
+                "knowledge_base_tag_id",
+                "category_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "knowledge_base_tags": {
+            "file": "2026_06_08_120020_create_knowledge_base_taxonomy_tables.php",
+            "fks": [
+                "knowledge_base_id",
+                "knowledge_base_tag_id",
+                "category_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "knowledge_base_document_tag": {
+            "file": "2026_06_08_120020_create_knowledge_base_taxonomy_tables.php",
+            "fks": [
+                "knowledge_base_id",
+                "knowledge_base_tag_id",
+                "category_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "sla_breaches": {
+            "file": "2026_06_08_120040_create_sla_rules_breaches_and_escalation_notifications_tables.php",
+            "fks": [
+                "ticket_id",
+                "sla_rule_id",
+                "ticket_id",
+                "sla_rule_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "escalation_notifications": {
+            "file": "2026_06_08_120040_create_sla_rules_breaches_and_escalation_notifications_tables.php",
+            "fks": [
+                "ticket_id",
+                "sla_rule_id",
+                "ticket_id",
+                "sla_rule_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "crm_leads": {
+            "file": "2026_06_08_150000_create_crm_leads_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "wash_loyalty_counters": {
+            "file": "2026_06_08_160000_create_wash_loyalty_tables.php",
+            "fks": [
+                "wash_customer_id",
+                "last_paid_transaction_id",
+                "wash_loyalty_counter_id",
+                "wash_customer_id",
+                "used_wash_transaction_id",
+                "wash_reward_voucher_id",
+                "wash_transaction_id",
+                "redeemed_by_user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_reward_vouchers": {
+            "file": "2026_06_08_160000_create_wash_loyalty_tables.php",
+            "fks": [
+                "wash_customer_id",
+                "last_paid_transaction_id",
+                "wash_loyalty_counter_id",
+                "wash_customer_id",
+                "used_wash_transaction_id",
+                "wash_reward_voucher_id",
+                "wash_transaction_id",
+                "redeemed_by_user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_reward_redemptions": {
+            "file": "2026_06_08_160000_create_wash_loyalty_tables.php",
+            "fks": [
+                "wash_customer_id",
+                "last_paid_transaction_id",
+                "wash_loyalty_counter_id",
+                "wash_customer_id",
+                "used_wash_transaction_id",
+                "wash_reward_voucher_id",
+                "wash_transaction_id",
+                "redeemed_by_user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_member_levels": {
+            "file": "2026_06_08_170000_create_wash_membership_tables.php",
+            "fks": [
+                "wash_member_level_id",
+                "wash_member_id",
+                "wash_member_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_members": {
+            "file": "2026_06_08_170000_create_wash_membership_tables.php",
+            "fks": [
+                "wash_member_level_id",
+                "wash_member_id",
+                "wash_member_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_member_vehicles": {
+            "file": "2026_06_08_170000_create_wash_membership_tables.php",
+            "fks": [
+                "wash_member_level_id",
+                "wash_member_id",
+                "wash_member_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "wash_member_cards": {
+            "file": "2026_06_08_170000_create_wash_membership_tables.php",
+            "fks": [
+                "wash_member_level_id",
+                "wash_member_id",
+                "wash_member_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "kasbon_loans": {
+            "file": "2026_06_10_000000_create_kasbon_loans_tables.php",
+            "fks": [
+                "user_id",
+                "kasbon_loan_id",
+                "salary_adjustment_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "kasbon_installments": {
+            "file": "2026_06_10_000000_create_kasbon_loans_tables.php",
+            "fks": [
+                "user_id",
+                "kasbon_loan_id",
+                "salary_adjustment_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wedding_gallery_items": {
+            "file": "2026_06_10_000001_create_wedding_gallery_items_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_member_packages": {
+            "file": "2026_06_12_000000_create_wash_member_packages_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_member_subscriptions": {
+            "file": "2026_06_12_000001_create_wash_member_subscriptions_table.php",
+            "fks": [
+                "wash_member_id",
+                "wash_member_package_id",
+                "wash_transaction_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "whatsapp_conversations": {
+            "file": "2026_06_12_230000_create_whatsapp_conversations_table.php",
+            "fks": [
+                "assigned_cs_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "whatsapp_groups": {
+            "file": "2026_06_13_093230_create_whatsapp_groups_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": true
+        },
+        "atk_customers": {
+            "file": "2026_06_13_195800_create_atk_customers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_suppliers": {
+            "file": "2026_06_13_195900_create_atk_suppliers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_categories": {
+            "file": "2026_06_13_200000_create_atk_categories_table.php",
+            "fks": [
+                "parent_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_services": {
+            "file": "2026_06_13_200100_create_atk_services_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_cash_registers": {
+            "file": "2026_06_13_200200_create_atk_cash_registers_table.php",
+            "fks": [
+                "opened_by",
+                "closed_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_stock_movements": {
+            "file": "2026_06_13_200300_create_atk_stock_movements_table.php",
+            "fks": [
+                "atk_product_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_expense_categories": {
+            "file": "2026_06_13_200400_create_atk_expense_categories_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_expenses": {
+            "file": "2026_06_13_200401_create_atk_expenses_table.php",
+            "fks": [
+                "atk_expense_category_id",
+                "approved_by",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_float_accounts": {
+            "file": "2026_06_13_210000_create_atk_float_accounts_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "atk_float_transactions": {
+            "file": "2026_06_13_210001_create_atk_float_transactions_table.php",
+            "fks": [
+                "atk_float_account_id",
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "owner_funds": {
+            "file": "2026_06_13_210002_create_owner_funds_table.php",
+            "fks": [
+                "created_by",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "atk_cash_movements": {
+            "file": "2026_06_13_210003_create_atk_cash_movements_table.php",
+            "fks": [
+                "atk_cash_register_id",
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "profit_centers": {
+            "file": "2026_06_17_000001_create_profit_centers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "cost_centers": {
+            "file": "2026_06_17_000002_create_cost_centers_table.php",
+            "fks": [
+                "profit_center_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_shifts": {
+            "file": "2026_06_17_000003_create_wash_shifts_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_cash_registers": {
+            "file": "2026_06_17_000004_create_wash_cash_registers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_shift_sessions": {
+            "file": "2026_06_17_000005_create_wash_shift_sessions_table.php",
+            "fks": [
+                "wash_shift_id",
+                "user_id",
+                "wash_cash_register_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_cash_movements": {
+            "file": "2026_06_17_000006_create_wash_cash_movements_table.php",
+            "fks": [
+                "wash_cash_register_id",
+                "user_id",
+                "wash_shift_session_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_daily_closings": {
+            "file": "2026_06_17_000007_create_wash_daily_closings_table.php",
+            "fks": [
+                "closed_by",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_suppliers": {
+            "file": "2026_06_17_000008_create_wash_suppliers_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "wash_point_transactions": {
+            "file": "2026_06_17_000009_create_wash_point_transactions_table.php",
+            "fks": [
+                "wash_member_id",
+                "wash_customer_id",
+                "wash_transaction_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_rewards": {
+            "file": "2026_06_17_000010_create_wash_rewards_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "fee_profiles": {
+            "file": "2026_06_18_100000_create_fee_profiles_table.php",
+            "fks": [
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "fee_tiers": {
+            "file": "2026_06_18_100001_create_fee_tiers_table.php",
+            "fks": [
+                "fee_profile_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "fee_logs": {
+            "file": "2026_06_18_100002_create_fee_logs_table.php",
+            "fks": [
+                "fee_profile_id",
+                "transaction_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        },
+        "receipt_templates": {
+            "file": "2026_06_18_110000_create_receipt_templates_table.php",
+            "fks": [
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "receipts": {
+            "file": "2026_06_18_110001_create_receipts_table.php",
+            "fks": [
+                "receipt_template_id",
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "receipt_activity_logs": {
+            "file": "2026_06_18_110002_create_receipt_activity_logs_table.php",
+            "fks": [
+                "receipt_id",
+                "user_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "business_units": {
+            "file": "2026_06_23_100000_create_business_units_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "branches": {
+            "file": "2026_06_23_100001_create_branches_table.php",
+            "fks": [
+                "business_unit_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "general_transactions": {
+            "file": "2026_06_23_100002_create_general_transactions_table.php",
+            "fks": [
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "created_by",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "expense_categories": {
+            "file": "2026_06_23_100004_create_expense_categories_table.php",
+            "fks": [
+                "business_unit_id",
+                "account_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "expenses": {
+            "file": "2026_06_23_100005_create_expenses_table.php",
+            "fks": [
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "expense_category_id",
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "expense_items": {
+            "file": "2026_06_23_100006_create_expense_items_table.php",
+            "fks": [
+                "expense_id",
+                "account_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "expense_approvals": {
+            "file": "2026_06_23_100007_create_expense_approvals_table.php",
+            "fks": [
+                "expense_id",
+                "approved_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "daily_summaries": {
+            "file": "2026_06_23_100009_create_summary_tables.php",
+            "fks": [
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "monthly_summaries": {
+            "file": "2026_06_23_100009_create_summary_tables.php",
+            "fks": [
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "yearly_summaries": {
+            "file": "2026_06_23_100009_create_summary_tables.php",
+            "fks": [
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id",
+                "business_unit_id",
+                "branch_id",
+                "profit_center_id",
+                "cost_center_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "outbox_events": {
+            "file": "2026_06_23_100010_create_outbox_events_table.php",
+            "fks": [],
+            "has_foreign_constraints": false,
+            "has_indexes": false
+        },
+        "reconciliation_reports": {
+            "file": "2026_06_23_100012_create_reconciliation_reports_table.php",
+            "fks": [
+                "business_unit_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "companies": {
+            "file": "2026_06_23_200000_create_companies_and_branches_tables.php",
+            "fks": [
+                "company_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "company_branches": {
+            "file": "2026_06_23_200000_create_companies_and_branches_tables.php",
+            "fks": [
+                "company_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "intercompany_transactions": {
+            "file": "2026_06_23_200002_create_intercompany_transactions_table.php",
+            "fks": [
+                "from_company_id",
+                "to_company_id",
+                "from_journal_id",
+                "to_journal_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "consolidation_reports": {
+            "file": "2026_06_23_200003_create_consolidation_tables.php",
+            "fks": [
+                "consolidation_report_id",
+                "company_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "consolidation_items": {
+            "file": "2026_06_23_200003_create_consolidation_tables.php",
+            "fks": [
+                "consolidation_report_id",
+                "company_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "fiber_plans": {
+            "file": "2026_06_27_151025_create_fiber_plans_table.php",
+            "fks": [
+                "region_id",
+                "olt_id",
+                "created_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "fiber_plan_items": {
+            "file": "2026_06_27_151035_create_fiber_plan_items_table.php",
+            "fks": [
+                "fiber_plan_id",
+                "inventory_item_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "hotspot_banners": {
+            "file": "2026_07_30_153000_create_hotspot_banners_table.php",
+            "fks": [
+                "created_by",
+                "updated_by"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": false
+        },
+        "wash_commission_earnings": {
+            "file": "2026_08_07_000001_create_wash_commission_earnings_table.php",
+            "fks": [
+                "wash_employee_id",
+                "wash_transaction_item_id",
+                "wash_transaction_id"
+            ],
+            "has_foreign_constraints": true,
+            "has_indexes": true
+        }
+    }
+}

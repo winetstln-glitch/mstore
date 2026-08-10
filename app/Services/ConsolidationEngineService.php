@@ -14,32 +14,31 @@ class ConsolidationEngineService
 {
     public function getConsolidatedReport(string $startDate, string $endDate): array
     {
-        $companies = Company::where('is_active', true)->get();
+        $companies    = Company::where('is_active', true)->get();
+        $companyIds   = $companies->pluck('id');
+
+        // Ambil jumlah transaksi per perusahaan sekaligus — satu query saja
+        $txCounts = \App\Models\GeneralTransaction::whereIn('company_id', $companyIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('company_id, COUNT(*) as total')
+            ->groupBy('company_id')
+            ->pluck('total', 'company_id');
+
+        // Ambil agregat debit/credit per perusahaan — satu query saja
+        $entryTotals = \App\Models\JournalEntry::whereIn('company_id', $companyIds)
+            ->whereHas('journal', fn ($q) => $q->whereBetween('created_at', [$startDate, $endDate]))
+            ->selectRaw('company_id, SUM(debit) as total_debit, SUM(credit) as total_credit')
+            ->groupBy('company_id')
+            ->get()
+            ->keyBy('company_id');
+
         $consolidatedData = [];
-
         foreach ($companies as $company) {
-            // Get General Transactions count
-            $transactionCount = \App\Models\GeneralTransaction::where('company_id', $company->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
-
-            // Get total debit and credit from Journal Entries
-            $debitTotal = \App\Models\JournalEntry::where('company_id', $company->id)
-                ->whereHas('journal', function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('debit');
-
-            $creditTotal = \App\Models\JournalEntry::where('company_id', $company->id)
-                ->whereHas('journal', function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('credit');
-
+            $totals = $entryTotals->get($company->id);
             $consolidatedData[$company->id] = [
-                'transactions' => $transactionCount,
-                'debit' => $debitTotal,
-                'credit' => $creditTotal,
+                'transactions' => $txCounts->get($company->id, 0),
+                'debit'        => $totals?->total_debit ?? 0,
+                'credit'       => $totals?->total_credit ?? 0,
             ];
         }
 
@@ -127,13 +126,18 @@ class ConsolidationEngineService
                 ->get();
 
             foreach ($items as $item) {
-                $eliminationAmount = $item->company_id == $ict->from_company_id 
-                    ? $ict->amount 
+                $eliminationAmount = $item->company_id == $ict->from_company_id
+                    ? $ict->amount
                     : -$ict->amount;
 
+                $newEliminatedAmount    = $item->eliminated_amount + $eliminationAmount;
+                // FIX MED-002: sebelumnya `amount + eliminated_amount` (salah, nilai lama).
+                // Seharusnya `amount - total_eliminated` agar consolidated = nilai setelah eliminasi.
+                $newConsolidatedAmount  = $item->amount - $newEliminatedAmount;
+
                 $item->update([
-                    'eliminated_amount' => $item->eliminated_amount + $eliminationAmount,
-                    'consolidated_amount' => $item->amount + ($item->eliminated_amount),
+                    'eliminated_amount'   => $newEliminatedAmount,
+                    'consolidated_amount' => $newConsolidatedAmount,
                 ]);
             }
         }

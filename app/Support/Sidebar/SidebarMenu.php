@@ -62,6 +62,7 @@ class SidebarMenu
                         self::link('net-incident', 'Network Incident', 'noc.operational.network_incident', permissions: ['noc.operational.view']),
                         self::link('net-diagnostic', 'Network Diagnostic', 'noc.operational.network_diagnostic', permissions: ['noc.operational.view']),
                         self::link('net-diagnostic-logs', 'Diagnostic Logs', 'noc.operational.diagnostic_logs', permissions: ['noc.diagnostic_logs.view']),
+                        self::link('net-fiber-monitoring', 'Fiber Monitoring', 'noc.operational.fiber_monitoring', permissions: ['noc.fiber_monitoring.view']),
                     ], permissions: ['noc.operational.view']),
                     self::group('net-infra', 'Infrastruktur', [
                         self::link('infra-olt', 'OLT', 'olt.index', permissions: ['olt.view']),
@@ -118,6 +119,7 @@ class SidebarMenu
                         self::link('balance-sheet', 'Balance Sheet', 'accounting.balance_sheet', permissions: ['accounting.view']),
                         self::link('ledger', 'Ledger', 'accounting.ledger', permissions: ['accounting.view']),
                         self::link('cash-flow', 'Cash Flow', 'accounting.cash_flow', permissions: ['accounting.view']),
+                        self::link('accounting-periods', 'Periode Akuntansi', 'accounting.periods.index', permissions: ['accounting.view']),
                     ], permissions: ['finance.view', 'accounting.view']),
                     self::group('finance-investor', 'Investor', [
                         self::link('finance-investor-report', 'Investor Report', 'finance.investor_report', permissions: ['finance.view', 'investor.view']),
@@ -157,6 +159,7 @@ class SidebarMenu
                 'label' => 'Business Units',
                 'items' => [
                     self::group('bu-atk', 'ATK', [
+                self::link('atk-guide', 'Panduan ATK', 'atk.guide', permissions: ['atk.view']),
                 self::link('atk-dashboard', 'Dashboard ATK', 'atk.dashboard', permissions: ['atk.view']),
                 self::link('atk-pos', 'POS ATK', 'atk.pos', permissions: ['atk.pos']),
                 self::link('atk-cash-registers', 'Kasir Shift', 'atk.cash-registers.index', permissions: ['atk.manage']),
@@ -199,6 +202,7 @@ class SidebarMenu
                         self::link('wash-reward-vouchers', 'Reward Voucher', 'wash.loyalty.vouchers', permissions: ['wash.reward.view']),
                         self::link('wash-membership-levels', 'Membership Level', 'wash.members.levels', permissions: ['wash.member.view']),
                         self::link('wash-reward-history', 'Riwayat Reward', 'wash.loyalty.redemptions', permissions: ['wash.reward.view']),
+                        self::link('wash-loyalty-report', 'Laporan Loyalty', 'wash.loyalty.report', permissions: ['wash.reward.view']),
                         self::link('wash-report', 'Laporan Wash', 'wash.reports.index', permissions: ['wash.report']),
                     ], permissions: ['wash.view', 'wash.pos', 'wash.manage', 'wash.report', 'wash.member.view', 'wash.loyalty.view', 'wash.reward.view', 'wash.package.view', 'wash.package.manage', 'wash.shift.view', 'wash.shift.open', 'wash.shift.close', 'wash.cash.view', 'wash.cash.manage', 'wash.closing.view', 'wash.closing.create', 'wash.closing.approve', 'wash.expense.view', 'wash.supplier.view', 'wash.supplier.manage', 'wash.shift.manage']),
                     self::group('bu-wedding', 'Wedding & Event', [
@@ -228,6 +232,8 @@ class SidebarMenu
                     self::group('sys-settings', 'General Settings', [
                         self::link('settings', 'Pengaturan Toko', 'settings.index', permissions: ['setting.view']),
                         self::link('attendance-settings', 'Pengaturan Absensi', 'settings.attendance.index', permissions: ['setting.view']),
+                        self::link('atk-settings', 'Pengaturan ATK', 'settings.atk.index', permissions: ['setting.view']),
+                        self::link('wash-settings', 'Pengaturan Wash', 'settings.wash.index', permissions: ['setting.view']),
                         self::link('regions', 'Wilayah & Cabang', 'regions.index', permissions: ['region.view']),
                         self::link('coordinators', 'Pengurus', 'coordinators.index', permissions: ['coordinator.view']),
                     ], permissions: ['setting.view', 'region.view', 'coordinator.view']),

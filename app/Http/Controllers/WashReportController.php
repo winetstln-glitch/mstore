@@ -148,8 +148,10 @@ class WashReportController extends Controller implements HasMiddleware
                 $dailyCommission = (int) (clone $dailyCommBaseQ)->sum('wash_commission_earnings.total_earned');
                 $dailyCommissionDetail = (clone $dailyCommBaseQ)
                     ->join('wash_employees as emp', 'emp.id', '=', 'wash_commission_earnings.wash_employee_id')
-                    ->selectRaw('emp.id as employee_id, emp.name, count(*) as item_count, sum(wash_commission_earnings.total_earned) as total_commission')
-                    ->groupBy(['emp.id', 'emp.name'])
+                    ->join('wash_transaction_items as wti', 'wti.id', '=', 'wash_commission_earnings.wash_transaction_item_id')
+                    ->selectRaw('emp.id as employee_id, emp.name, wti.service_name, wash_commission_earnings.rate_per_unit, count(*) as item_count, sum(wash_commission_earnings.total_earned) as total_commission')
+                    ->groupBy(['emp.id', 'emp.name', 'wti.service_name', 'wash_commission_earnings.rate_per_unit'])
+                    ->orderBy('emp.name')
                     ->orderByDesc('total_commission')
                     ->get();
 
@@ -339,7 +341,7 @@ class WashReportController extends Controller implements HasMiddleware
         });
 
         $dailyCommissionItemCount = 0;
-        $dailyCommissionEmpCount = $dailyCommissionDetail->count();
+        $dailyCommissionEmpCount = collect($dailyCommissionDetail)->pluck('employee_id')->unique()->count();
         foreach ($dailyCommissionDetail as $d) {
             $dailyCommissionItemCount += (int) $d->item_count;
         }

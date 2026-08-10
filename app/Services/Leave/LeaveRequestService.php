@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class LeaveRequestService
 {
@@ -31,11 +32,17 @@ class LeaveRequestService
 
     public function calculateLeaveDays(User $user, Carbon $startDate, Carbon $endDate, string $type): int
     {
+        // Pre-load semua hari libur dalam range sekaligus — satu query saja
+        $holidays = PublicHoliday::whereBetween('date', [
+            $startDate->toDateString(),
+            $endDate->toDateString(),
+        ])->pluck('date')->map(fn ($d) => (string) $d)->all();
+
         $totalDays = 0;
-        $current = $startDate->copy();
+        $current   = $startDate->copy();
 
         while ($current->lte($endDate)) {
-            if (!$this->isWeekend($current) && !$this->isPublicHoliday($current)) {
+            if (! $this->isWeekend($current) && ! in_array($current->toDateString(), $holidays)) {
                 $totalDays++;
             }
             $current->addDay();
@@ -49,6 +56,10 @@ class LeaveRequestService
         return $date->isSaturday() || $date->isSunday();
     }
 
+    /**
+     * Cek hari libur untuk tanggal tunggal (tetap ada untuk kompatibilitas).
+     * Untuk kalkulasi range hari, gunakan calculateLeaveDays() yang sudah dioptimasi.
+     */
     public function isPublicHoliday(Carbon $date): bool
     {
         return PublicHoliday::whereDate('date', $date->toDateString())->exists();
@@ -87,51 +98,53 @@ class LeaveRequestService
 
     public function approveLeaveRequest(LeaveRequest $leaveRequest, User $approver): LeaveRequest
     {
-        $leaveRequest->update([
-            'status' => 'approved',
-            'approved_by' => $approver->id,
-        ]);
+        return DB::transaction(function () use ($leaveRequest, $approver) {
+            $leaveRequest->update([
+                'status'      => 'approved',
+                'approved_by' => $approver->id,
+            ]);
 
-        $this->updateLeaveQuota($leaveRequest);
+            $this->updateLeaveQuota($leaveRequest);
 
-        // Create or update attendance records for the leave period
-        $attendanceStatus = match($leaveRequest->type) {
-            'sick' => 'sick',
-            'permission' => 'permit',
-            default => 'leave',
-        };
+            // Create or update attendance records for the leave period
+            $attendanceStatus = match ($leaveRequest->type) {
+                'sick'       => 'sick',
+                'permission' => 'permit',
+                default      => 'leave',
+            };
 
-        $start = $leaveRequest->start_date;
-        $end = $leaveRequest->end_date;
+            $start = $leaveRequest->start_date;
+            $end   = $leaveRequest->end_date;
 
-        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-            $attendance = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
-                ->where(function ($q) use ($date) {
-                    $q->whereDate('clock_in', $date->toDateString())
-                      ->orWhereDate('work_date', $date->toDateString());
-                })
-                ->first();
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                $attendance = \App\Models\TechnicianAttendance::where('user_id', $leaveRequest->user_id)
+                    ->where(function ($q) use ($date) {
+                        $q->whereDate('clock_in', $date->toDateString())
+                          ->orWhereDate('work_date', $date->toDateString());
+                    })
+                    ->first();
 
-            if (! $attendance) {
-                \App\Models\TechnicianAttendance::create([
-                    'user_id' => $leaveRequest->user_id,
-                    'work_date' => $date->toDateString(),
-                    'clock_in' => $date->toDateString() . ' 08:00:00',
-                    'clock_out' => $date->toDateString() . ' 17:00:00',
-                    'status' => $attendanceStatus,
-                    'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id,
-                    'generated_type' => 'leave_request',
-                ]);
-            } elseif ($attendance->status === 'alpha') {
-                $attendance->update([
-                    'status' => $attendanceStatus,
-                    'notes' => ucfirst($attendanceStatus) . ' otomatis dari pengajuan cuti #' . $leaveRequest->id . ' (dari alpha)',
-                    'generated_type' => 'leave_request',
-                ]);
+                if (! $attendance) {
+                    \App\Models\TechnicianAttendance::create([
+                        'user_id'        => $leaveRequest->user_id,
+                        'work_date'      => $date->toDateString(),
+                        'clock_in'       => $date->toDateString().' 08:00:00',
+                        'clock_out'      => $date->toDateString().' 17:00:00',
+                        'status'         => $attendanceStatus,
+                        'notes'          => ucfirst($attendanceStatus).' otomatis dari pengajuan cuti #'.$leaveRequest->id,
+                        'generated_type' => 'leave_request',
+                    ]);
+                } elseif ($attendance->status === 'alpha') {
+                    $attendance->update([
+                        'status'         => $attendanceStatus,
+                        'notes'          => ucfirst($attendanceStatus).' otomatis dari pengajuan cuti #'.$leaveRequest->id.' (dari alpha)',
+                        'generated_type' => 'leave_request',
+                    ]);
+                }
             }
-        }
 
-        return $leaveRequest;
+            return $leaveRequest;
+        });
     }
 
     public function rejectLeaveRequest(LeaveRequest $leaveRequest, string $reason): LeaveRequest
