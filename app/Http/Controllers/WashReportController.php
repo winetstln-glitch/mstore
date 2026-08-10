@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\WashCommissionEarning;
 use App\Models\WashLoyaltyCounter;
 use App\Models\WashMember;
 use App\Models\WashMemberLevel;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class WashReportController extends Controller implements HasMiddleware
 {
@@ -123,6 +125,57 @@ class WashReportController extends Controller implements HasMiddleware
         $dailyWashExpense = $dailyExpense - $dailyCaffeInitialCapital;
         $monthlyWashIncome = $monthlyIncome - $monthlyCaffeRevenue;
         $monthlyWashExpense = $monthlyExpense - $monthlyCaffeInitialCapital;
+
+        $dailyCommission = 0;
+        $monthlyCommission = 0;
+        $dailyCommissionDetail = collect();
+        $monthlyDailyCommissionMap = collect();
+        try {
+            if (Schema::hasTable('wash_commission_earnings')) {
+                $dailyCommBaseQ = WashCommissionEarning::query()
+                    ->join('wash_transactions as t', 't.id', '=', 'wash_commission_earnings.wash_transaction_id')
+                    ->whereIn('wash_commission_earnings.status', [WashCommissionEarning::STATUS_EARNED, WashCommissionEarning::STATUS_PAID])
+                    ->whereBetween('t.created_at', [
+                        $startDate.' 00:00:00',
+                        $endDate.' 23:59:59',
+                    ]);
+                if ($normalizedVehiclePlate !== '') {
+                    $dailyCommBaseQ->whereRaw(
+                        "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                        [$normalizedVehiclePlate]
+                    );
+                }
+                $dailyCommission = (int) (clone $dailyCommBaseQ)->sum('wash_commission_earnings.total_earned');
+                $dailyCommissionDetail = (clone $dailyCommBaseQ)
+                    ->join('wash_employees as emp', 'emp.id', '=', 'wash_commission_earnings.wash_employee_id')
+                    ->selectRaw('emp.id as employee_id, emp.name, count(*) as item_count, sum(wash_commission_earnings.total_earned) as total_commission')
+                    ->groupBy(['emp.id', 'emp.name'])
+                    ->orderByDesc('total_commission')
+                    ->get();
+
+                $monthlyCommBaseQ = WashCommissionEarning::query()
+                    ->join('wash_transactions as t', 't.id', '=', 'wash_commission_earnings.wash_transaction_id')
+                    ->whereIn('wash_commission_earnings.status', [WashCommissionEarning::STATUS_EARNED, WashCommissionEarning::STATUS_PAID])
+                    ->where('t.created_at', 'like', "$month%");
+                if ($normalizedVehiclePlate !== '') {
+                    $monthlyCommBaseQ->whereRaw(
+                        "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(t.vehicle_plate, ''), ' ', ''), '-', ''), '.', ''), '/', '')) = ?",
+                        [$normalizedVehiclePlate]
+                    );
+                }
+                $monthlyCommission = (int) (clone $monthlyCommBaseQ)->sum('wash_commission_earnings.total_earned');
+                $monthlyDailyCommissionMap = (clone $monthlyCommBaseQ)
+                    ->select(DB::raw('DATE(t.created_at) as d'), DB::raw('SUM(wash_commission_earnings.total_earned) as total'))
+                    ->groupBy(DB::raw('DATE(t.created_at)'))
+                    ->get()
+                    ->keyBy('d');
+            }
+        } catch (\Throwable) {}
+
+        $dailyWashNetProfit = $dailyWashIncome - $dailyWashExpense - $dailyCommission;
+        $dailyTotalNetProfit = $dailyIncome - $dailyExpense - $dailyCommission;
+        $monthlyWashNetProfit = $monthlyWashIncome - $monthlyWashExpense - $monthlyCommission;
+        $monthlyTotalNetProfit = $monthlyIncome - $monthlyExpense - $monthlyCommission;
 
         $dailyIncomeRowsQuery = WashTransaction::query()
             ->with('user:id,name')
@@ -285,12 +338,45 @@ class WashReportController extends Controller implements HasMiddleware
             ];
         });
 
+        $dailyCommissionItemCount = 0;
+        $dailyCommissionEmpCount = $dailyCommissionDetail->count();
+        foreach ($dailyCommissionDetail as $d) {
+            $dailyCommissionItemCount += (int) $d->item_count;
+        }
+        $dailyLabaKotor = $dailyIncome - $dailyExpense;
+        $dailyTrxCount = $dailyIncomeRows->count();
+        $dailyExpCount = $dailyExpenseRows->count();
+
+        $dailyCash = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
+        $dailyQris = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
+        $dailyTransfer = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
+        $dailySetoranCash = $dailyCash - (float) $dailyExpense;
+        $dailySetoranCashBersih = $dailyCash - (float) $dailyExpense - (float) $dailyCommission;
+        $loyaltyBonusCount = $dailyIncomeRows->filter(fn ($r) => str_starts_with(strtolower(trim((string) ($r->notes ?? ''))), 'bonus_cuci'))->count();
+        $dailySvcTotal = (float) $dailyByService->sum('amount');
+        $dailySvcDiff = (float) $dailyIncome - $dailySvcTotal;
+        $dailyDiscountTotal = (float) $dailyIncomeRows->sum('discount_amount');
+
+        $monthlyLabaKotor = $monthlyIncome - $monthlyExpense;
+
+        $monthlyCash = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
+        $monthlyQris = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
+        $monthlyTransfer = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
+        $monthlySetoranCash = $monthlyCash - (float) $monthlyExpense;
+        $monthlySetoranCashBersih = $monthlyCash - (float) $monthlyExpense - (float) $monthlyCommission;
+        $monthlySvcTotal = (float) $monthlyByService->sum('amount');
+        $monthlySvcDiff = (float) $monthlyIncome - $monthlySvcTotal;
+
         return compact(
             'startDate', 'endDate', 'month',
             'vehiclePlate', 'knownVehiclePlates',
             'dailyIncome', 'dailyExpense', 'monthlyIncome', 'monthlyExpense',
             'dailyCaffeInitialCapital', 'dailyCaffeRevenue', 'monthlyCaffeInitialCapital', 'monthlyCaffeRevenue',
             'dailyWashIncome', 'dailyWashExpense', 'monthlyWashIncome', 'monthlyWashExpense',
+            'dailyCommission', 'monthlyCommission',
+            'dailyCommissionDetail', 'monthlyDailyCommissionMap',
+            'dailyWashNetProfit', 'dailyTotalNetProfit',
+            'monthlyWashNetProfit', 'monthlyTotalNetProfit',
             'dailyIncomeRows', 'dailyExpenseRows',
             'monthlyDailyIncome', 'monthlyDailyExpense',
             'dailyByService', 'dailyByPayment', 'monthlyByService', 'monthlyByPayment',
@@ -298,7 +384,16 @@ class WashReportController extends Controller implements HasMiddleware
             'topMembers', 'levelDistribution',
             'dailyRewardRedemptions', 'dailyRewardRedemptionCount',
             'monthlyRewardRedemptions', 'monthlyRewardRedemptionCount',
-            'loyaltyProgressRows'
+            'loyaltyProgressRows',
+            'dailyCommissionItemCount', 'dailyCommissionEmpCount',
+            'dailyLabaKotor', 'dailyTrxCount', 'dailyExpCount',
+            'dailyCash', 'dailyQris', 'dailyTransfer',
+            'dailySetoranCash', 'dailySetoranCashBersih',
+            'loyaltyBonusCount', 'dailySvcTotal', 'dailySvcDiff', 'dailyDiscountTotal',
+            'monthlyLabaKotor',
+            'monthlyCash', 'monthlyQris', 'monthlyTransfer',
+            'monthlySetoranCash', 'monthlySetoranCashBersih',
+            'monthlySvcTotal', 'monthlySvcDiff'
         );
     }
 
@@ -371,13 +466,24 @@ class WashReportController extends Controller implements HasMiddleware
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rentang Harian', $data['startDate'].' s/d '.$data['endDate'], 'Bulan', $data['month']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Ringkasan Harian']));
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['dailyIncome'], 'Pengeluaran', $data['dailyExpense'], 'Laba', $data['dailyIncome'] - $data['dailyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['dailyIncome'], 'Pengeluaran', $data['dailyExpense'], 'Laba Kotor', $data['dailyIncome'] - $data['dailyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Potongan Komisi Operator', -$data['dailyCommission'], 'Laba Bersih (Setelah Komisi)', $data['dailyTotalNetProfit']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Caffe - Modal Awal', $data['dailyCaffeInitialCapital'], 'Caffe - Pendapatan', $data['dailyCaffeRevenue'], 'Caffe - Selisih', $data['dailyCaffeRevenue'] - $data['dailyCaffeInitialCapital']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Ringkasan Bulanan']));
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['monthlyIncome'], 'Pengeluaran', $data['monthlyExpense'], 'Laba', $data['monthlyIncome'] - $data['monthlyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Pemasukan', $data['monthlyIncome'], 'Pengeluaran', $data['monthlyExpense'], 'Laba Kotor', $data['monthlyIncome'] - $data['monthlyExpense']]));
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Potongan Komisi Operator', -$data['monthlyCommission'], 'Laba Bersih (Setelah Komisi)', $data['monthlyTotalNetProfit']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Caffe - Modal Awal', $data['monthlyCaffeInitialCapital'], 'Caffe - Pendapatan', $data['monthlyCaffeRevenue'], 'Caffe - Selisih', $data['monthlyCaffeRevenue'] - $data['monthlyCaffeInitialCapital']]));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            if ($data['dailyCommissionDetail']->count() > 0) {
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Komisi Karyawan (Harian)']));
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['No', 'Nama Karyawan', 'Jumlah Item', 'Total Komisi']));
+                foreach ($data['dailyCommissionDetail'] as $idx => $d) {
+                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([$idx + 1, $d->name, (int)$d->item_count, (int)$d->total_commission]));
+                }
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['', '', 'TOTAL POTONGAN KOMISI', -$data['dailyCommission']]));
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+            }
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Rincian Pemasukan Harian']));
             $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Tanggal', 'Waktu', 'No Antri', 'No Trx', 'Kasir', 'Metode', 'Total']));
             foreach ($data['dailyIncomeRows'] as $r) {

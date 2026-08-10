@@ -591,15 +591,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         </div>
                     </form>
 
-                    @php
-                        $dailyCommissionItemCount = 0;
-                        $dailyCommissionEmpCount = $dailyCommissionDetail->count();
-                        foreach($dailyCommissionDetail as $d) { $dailyCommissionItemCount += (int)$d->item_count; }
-                        $dailyLabaKotor = $dailyIncome - $dailyExpense;
-                        $dailyTrxCount = $dailyIncomeRows->count();
-                        $dailyExpCount = $dailyExpenseRows->count();
-                    @endphp
-
                     <!-- =============== RINGKASAN UTAMA (CARD) =============== -->
                     <h6 class="fw-bold text-muted mb-3 text-uppercase small"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Ringkasan Cepat</h6>
                     <div class="row g-3 mb-4">
@@ -759,17 +750,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
 
                     <!-- =============== STATISTIK (2 KOLOM) =============== -->
                     <div class="row g-3 mb-4">
-                        @php
-                            $dailyCash = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
-                            $dailyQris = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
-                            $dailyTransfer = (float) (collect($dailyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
-                            $dailySetoranCash = $dailyCash - (float) $dailyExpense;
-                            $dailySetoranCashBersih = $dailyCash - (float) $dailyExpense - (float) $dailyCommission;
-                            $loyaltyBonusCount = $dailyIncomeRows->filter(fn($r) => str_starts_with(strtolower(trim((string) ($r->notes ?? ''))), 'bonus_cuci'))->count();
-                            $dailySvcTotal = (float) $dailyByService->sum('amount');
-                            $dailySvcDiff = (float) $dailyIncome - $dailySvcTotal;
-                            $dailyDiscountTotal = (float) $dailyIncomeRows->sum('discount_amount');
-                        @endphp
                         <!-- Breakdown Layanan -->
                         <div class="col-md-6">
                             <div class="card border-0 shadow-sm h-100">
@@ -1172,10 +1152,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
                         </div>
                     </form>
 
-                    @php
-                        $monthlyLabaKotor = $monthlyIncome - $monthlyExpense;
-                    @endphp
-
                     <!-- =============== RINGKASAN UTAMA (CARD) =============== -->
                     <h6 class="fw-bold text-muted mb-3 text-uppercase small"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Ringkasan Bulan {{ $month }}</h6>
                     <div class="row g-3 mb-4">
@@ -1365,15 +1341,6 @@ body #page-content-wrapper .wash-reports-page > div.card,
 
                     <!-- =============== STATISTIK LAYANAN + METODE =============== -->
                     <div class="row g-3 mb-4">
-                        @php
-                            $monthlyCash = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'cash')->amount ?? 0);
-                            $monthlyQris = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'qris')->amount ?? 0);
-                            $monthlyTransfer = (float) (collect($monthlyByPayment)->firstWhere('payment_method', 'transfer')->amount ?? 0);
-                            $monthlySetoranCash = $monthlyCash - (float) $monthlyExpense;
-                            $monthlySetoranCashBersih = $monthlyCash - (float) $monthlyExpense - (float) $monthlyCommission;
-                            $monthlySvcTotal = (float) $monthlyByService->sum('amount');
-                            $monthlySvcDiff = (float) $monthlyIncome - $monthlySvcTotal;
-                        @endphp
                         <div class="col-md-6">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-header bg-info bg-opacity-25 fw-semibold py-2">
