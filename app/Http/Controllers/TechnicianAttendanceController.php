@@ -710,16 +710,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $deviceFingerprint = $this->attendanceService->resolveAttendanceDeviceFingerprint($request, $currentUser);
-            if (!$currentUser?->attendance_device_hash) {
-                $currentUser?->forceFill([
+            if (!$currentUser?->employee?->attendance_device_hash || (string)$currentUser?->employee?->attendance_device_hash !== $deviceFingerprint) {
+                $currentUser?->employee?->forceFill([
                     'attendance_device_hash' => $deviceFingerprint,
                     'attendance_device_locked_at' => now(),
-                ])->save();
-            } elseif ((string)$currentUser?->attendance_device_hash !== $deviceFingerprint) {
-                $currentUser?->forceFill([
-                    'attendance_device_hash' => $deviceFingerprint,
-                    'attendance_device_locked_at' => now(),
-                ])->save();
+                ])?->save();
             }
 
             $officeLat = Setting::getValue('attendance_office_lat');
@@ -822,11 +817,11 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
 
             $deviceFingerprint = $this->attendanceService->resolveAttendanceDeviceFingerprint($request, $currentUser);
             $currentUserAgent = mb_substr((string)$request->userAgent(), 0, 255);
-            if (!$currentUser?->attendance_device_hash || (string)$currentUser?->attendance_device_hash !== $deviceFingerprint) {
-                $currentUser?->forceFill([
+            if (!$currentUser?->employee?->attendance_device_hash || (string)$currentUser?->employee?->attendance_device_hash !== $deviceFingerprint) {
+                $currentUser?->employee?->forceFill([
                     'attendance_device_hash' => $deviceFingerprint,
                     'attendance_device_locked_at' => now(),
-                ])->save();
+                ])?->save();
             }
 
             $officeLat = Setting::getValue('attendance_office_lat');
