@@ -66,6 +66,35 @@
                                 @enderror
                             </div>
 
+                            <!-- Perusahaan -->
+                            <div class="col-md-6">
+                                <label for="company_id" class="form-label">{{ __('Perusahaan') }}</label>
+                                <select name="company_id" id="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
+                                    <option value="">{{ __('Pilih Perusahaan') }}</option>
+                                    @foreach($companies as $company)
+                                        <option value="{{ $company->id }}" {{ old('company_id', $user->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('company_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Cabang -->
+                            <div class="col-md-6">
+                                <label for="company_branch_id" class="form-label">{{ __('Cabang Perusahaan') }}</label>
+                                <select name="company_branch_id" id="company_branch_id" class="form-select @error('company_branch_id') is-invalid @enderror">
+                                    <option value="">{{ __('Pilih Perusahaan terlebih dahulu') }}</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('company_branch_id', $user->company_branch_id) == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">{{ __('Opsional. Pilih cabang dari perusahaan yang terkait.') }}</div>
+                                @error('company_branch_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <!-- Nomor HP -->
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">{{ __('Nomor HP') }}</label>
@@ -129,6 +158,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         const nameInput = document.getElementById('name');
         const usernameInput = document.getElementById('username');
+        const companySelect = document.getElementById('company_id');
+        const branchSelect = document.getElementById('company_branch_id');
 
         if (nameInput && usernameInput) {
             const slugify = (value) => value
@@ -147,6 +178,46 @@
                     syncUsername();
                 }
             });
+        }
+
+        if (companySelect && branchSelect) {
+            const branchesByCompany = @json(
+                $companies->mapWithKeys(fn ($c) => [
+                    $c->id => $c->branches()->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                ])
+            );
+            const selectedOldBranch = @json(old('company_branch_id', $user->company_branch_id));
+
+            const refreshBranches = () => {
+                const companyId = parseInt(companySelect.value, 10) || null;
+                branchSelect.innerHTML = '';
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = companyId
+                    ? '{{ __('Pilih Cabang (opsional)') }}'
+                    : '{{ __('Pilih Perusahaan terlebih dahulu') }}';
+                branchSelect.appendChild(defaultOpt);
+
+                if (companyId && branchesByCompany[companyId]) {
+                    branchesByCompany[companyId].forEach(function (branch) {
+                        const opt = document.createElement('option');
+                        opt.value = branch.id;
+                        opt.textContent = branch.name;
+                        if (String(selectedOldBranch) === String(branch.id)) {
+                            opt.selected = true;
+                        }
+                        branchSelect.appendChild(opt);
+                    });
+                }
+            };
+
+            companySelect.addEventListener('change', function () {
+                // Saat company diubah, reset selected branch yang ditampilkan
+                // (gunakan current value untuk default)
+                refreshBranches();
+            });
+            // Jalankan refresh saat load untuk set branch based on user's current company
+            refreshBranches();
         }
 
         if (monthlySalaryInput && dailySalaryInput) {

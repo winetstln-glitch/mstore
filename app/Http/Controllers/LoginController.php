@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Role;
 use App\Models\Setting;
@@ -175,6 +176,7 @@ class LoginController extends Controller
 
         $username = trim((string) ($customer->pppoe_user ?? ''));
         $email = 'customer'.$customer->id.'@local.test';
+        $defaultCompanyId = Company::where('is_active', true)->orderBy('id')->value('id');
 
         if (! $user && $username !== '') {
             $user = User::where('username', $username)->first();
@@ -206,6 +208,7 @@ class LoginController extends Controller
                 'phone' => $customer->phone,
                 'password' => $rawPassword,
                 'role_id' => $role->id,
+                'company_id' => $defaultCompanyId,
                 'is_active' => ($customer->status ?? 'active') === 'active',
             ]);
         } else {
@@ -221,6 +224,9 @@ class LoginController extends Controller
             }
             if (! $user->role_id) {
                 $updates['role_id'] = $role->id;
+            }
+            if (! $user->company_id && $defaultCompanyId) {
+                $updates['company_id'] = $defaultCompanyId;
             }
             $user->fill($updates)->save();
         }

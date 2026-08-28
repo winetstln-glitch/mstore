@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,6 +18,7 @@ class UserSeeder extends Seeder
         $adminRole = Role::where('name', 'admin')->first();
         $nocRole = Role::where('name', 'noc')->first();
         $techRole = Role::where('name', 'technician')->first();
+        $defaultCompanyId = Company::where('is_active', true)->orderBy('id')->value('id');
 
         User::updateOrCreate(
             ['email' => 'admin@mstore.local'],
@@ -25,6 +27,7 @@ class UserSeeder extends Seeder
                 'username' => 'admin',
                 'password' => Hash::make('password'),
                 'role_id' => $adminRole->id,
+                'company_id' => $defaultCompanyId,
                 'is_active' => true,
             ]
         );
@@ -36,6 +39,7 @@ class UserSeeder extends Seeder
                 'username' => 'noc',
                 'password' => Hash::make('password'),
                 'role_id' => $nocRole->id,
+                'company_id' => $defaultCompanyId,
                 'is_active' => true,
             ]
         );
@@ -47,6 +51,7 @@ class UserSeeder extends Seeder
                 'username' => 'tech1',
                 'password' => Hash::make('password'),
                 'role_id' => $techRole->id,
+                'company_id' => $defaultCompanyId,
                 'is_active' => true,
             ]
         );
@@ -58,6 +63,7 @@ class UserSeeder extends Seeder
                 'username' => 'testuser',
                 'password' => Hash::make('Test12345!'),
                 'role_id' => $adminRole->id,
+                'company_id' => $defaultCompanyId,
                 'is_active' => true,
             ]
         );

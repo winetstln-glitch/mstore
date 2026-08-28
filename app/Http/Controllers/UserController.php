@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
+use App\Models\CompanyBranch;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
@@ -45,9 +47,13 @@ class UserController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('username', 'like', "%{$search}%")
-                    ->orWhere('attendance_card_code', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('username', 'like', "%{$search}%");
+
+                if ($this->hasAttendanceCardColumn()) {
+                    $q->orWhere('attendance_card_code', 'like', "%{$search}%");
+                }
+
+                $q->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -74,9 +80,13 @@ class UserController extends Controller implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('username', 'like', "%{$search}%")
-                    ->orWhere('attendance_card_code', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('username', 'like', "%{$search}%");
+
+                if ($this->hasAttendanceCardColumn()) {
+                    $q->orWhere('attendance_card_code', 'like', "%{$search}%");
+                }
+
+                $q->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -134,8 +144,13 @@ class UserController extends Controller implements HasMiddleware
     public function create()
     {
         $roles = Role::where('name', '!=', 'customer')->get();
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
+        $defaultCompanyId = (int) old('company_id', $companies->count() === 1 ? $companies->first()->id : null);
+        $branches = $defaultCompanyId
+            ? CompanyBranch::where('company_id', $defaultCompanyId)->where('is_active', true)->orderBy('name')->get()
+            : collect();
 
-        return view('users.create', compact('roles'));
+        return view('users.create', compact('roles', 'companies', 'branches'));
     }
 
     public function store(Request $request)
@@ -147,6 +162,8 @@ class UserController extends Controller implements HasMiddleware
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
+            'company_id' => ['required', 'exists:companies,id'],
+            'company_branch_id' => ['nullable', 'exists:company_branches,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'monthly_salary' => ['nullable', 'numeric', 'min:0'],
@@ -159,6 +176,17 @@ class UserController extends Controller implements HasMiddleware
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', 'unique:users,attendance_card_code'];
         }
         $validated = $request->validate($rules);
+
+        $companyBranchId = $validated['company_branch_id'] ?? null;
+        if ($companyBranchId !== null) {
+            $belongsToCompany = CompanyBranch::query()
+                ->where('id', $companyBranchId)
+                ->where('company_id', $validated['company_id'])
+                ->exists();
+            if (! $belongsToCompany) {
+                $companyBranchId = null;
+            }
+        }
 
         // Prevent duplicates by checking name too
         $existing = User::findExistingUser([
@@ -185,6 +213,8 @@ class UserController extends Controller implements HasMiddleware
             'radius_username' => $validated['radius_username'] ?? null,
             'password' => Hash::make('12345678'),
             'role_id' => $validated['role_id'],
+            'company_id' => $validated['company_id'],
+            'company_branch_id' => $companyBranchId,
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'monthly_salary' => $validated['monthly_salary'] ?? 0,
@@ -213,8 +243,13 @@ class UserController extends Controller implements HasMiddleware
     public function edit(User $user)
     {
         $roles = Role::where('name', '!=', 'customer')->get();
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
+        $companyId = (int) old('company_id', $user->company_id ?? ($companies->count() === 1 ? $companies->first()->id : null));
+        $branches = $companyId
+            ? CompanyBranch::where('company_id', $companyId)->where('is_active', true)->orderBy('name')->get()
+            : collect();
 
-        return view('users.edit', compact('user', 'roles'));
+        return view('users.edit', compact('user', 'roles', 'companies', 'branches'));
     }
 
     public function update(Request $request, User $user)
@@ -226,6 +261,8 @@ class UserController extends Controller implements HasMiddleware
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
             'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
+            'company_id' => ['required', 'exists:companies,id'],
+            'company_branch_id' => ['nullable', 'exists:company_branches,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'daily_salary' => ['nullable', 'numeric', 'min:0'],
             'monthly_salary' => ['nullable', 'numeric', 'min:0'],
@@ -238,6 +275,17 @@ class UserController extends Controller implements HasMiddleware
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', Rule::unique('users', 'attendance_card_code')->ignore($user->id)];
         }
         $validated = $request->validate($rules);
+
+        $companyBranchId = $validated['company_branch_id'] ?? null;
+        if ($companyBranchId !== null) {
+            $belongsToCompany = CompanyBranch::query()
+                ->where('id', $companyBranchId)
+                ->where('company_id', $validated['company_id'])
+                ->exists();
+            if (! $belongsToCompany) {
+                $companyBranchId = null;
+            }
+        }
 
         $existing = User::findExistingUser([
             'email' => $validated['email'] ?? null,
@@ -261,6 +309,8 @@ class UserController extends Controller implements HasMiddleware
             'username' => $username,
             'radius_username' => $validated['radius_username'] ?? null,
             'role_id' => $validated['role_id'],
+            'company_id' => $validated['company_id'],
+            'company_branch_id' => $companyBranchId,
             'phone' => $validated['phone'] ?? null,
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'monthly_salary' => $validated['monthly_salary'] ?? 0,
@@ -410,9 +460,12 @@ class UserController extends Controller implements HasMiddleware
 
     private function hasAttendanceCardColumn(): bool
     {
-        return \Illuminate\Support\Facades\Cache::rememberForever('users_attendance_card_column', function () {
-            return Schema::hasColumn('users', 'attendance_card_code');
-        });
+        static $hasColumn = null;
+        if ($hasColumn === null) {
+            $hasColumn = Schema::hasColumn('users', 'attendance_card_code');
+        }
+
+        return $hasColumn;
     }
 
     private function buildUsernameFromName(string $name, ?string $fallbackEmail = null, ?int $ignoreId = null): string

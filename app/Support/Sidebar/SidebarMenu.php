@@ -172,10 +172,19 @@ class SidebarMenu
                     self::link('atk-expenses', 'Pengeluaran ATK', 'atk.expenses.index', permissions: ['atk.manage']),
                     self::link('atk-fee-management', 'Manajemen Biaya', 'atk.fee.index', permissions: ['atk.manage']),
                     self::link('atk-cash-movements', 'Mutasi Kas Utama', 'atk.cash-movements.index', permissions: ['atk.manage']),
-                ], permissions: ['atk.manage']),
+                    self::link('atk-daily-closings', 'Penutupan Harian', 'atk.daily-closings.index', permissions: ['atk.closing.view', 'atk.manage']),
+                ], permissions: ['atk.manage', 'atk.closing.view']),
                 self::group('atk-master', 'Master Data', [
                     self::link('atk-manage', 'Manajemen ATK', 'atk.products.index', permissions: ['atk.manage']),
-                ], permissions: ['atk.manage']),
+                    self::link('atk-categories', 'Kategori Produk', 'atk.categories.index', permissions: ['atk.manage']),
+                    self::link('atk-suppliers', 'Supplier', 'atk.suppliers.index', permissions: ['atk.supplier.view', 'atk.manage']),
+                    self::link('atk-customers', 'Pelanggan/Member B2B', 'atk.customers.index', permissions: ['atk.customer.view', 'atk.manage']),
+                ], permissions: ['atk.manage', 'atk.supplier.view', 'atk.customer.view']),
+                self::group('atk-inventory', 'Inventory', [
+                    self::link('atk-stock', 'Stok Saat Ini', 'atk.stock.index', permissions: ['atk.stock.view', 'atk.manage']),
+                    self::link('atk-purchasing', 'Stok Masuk (Purchasing)', 'atk.purchasing.index', permissions: ['atk.purchasing.view', 'atk.manage']),
+                    self::link('atk-stock-opname', 'Stok Opname', 'atk.stock-opname.index', permissions: ['atk.stock.view', 'atk.manage']),
+                ], permissions: ['atk.stock.view', 'atk.purchasing.view', 'atk.manage']),
                 self::group('atk-reports', 'Laporan', [
                     self::link('atk-reports-sales', 'Laporan Penjualan', 'atk.reports.index', permissions: ['atk.report']),
                     self::link('atk-reports-cash', 'Laporan Kas Harian', 'atk.reports.cash', permissions: ['atk.report']),
