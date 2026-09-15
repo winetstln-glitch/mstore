@@ -86,12 +86,16 @@
                         </thead>
                         <tbody>
                             @forelse($roles as $role)
+                            @php
+                                $systemNames = \App\Models\Role::allSystemRoleNames();
+                                $isSystemRole = in_array($role->name, $systemNames, true) || (bool) $role->is_system;
+                            @endphp
                             <tr>
                                 <td class="ps-3 fw-medium">
                                     {{ $role->name }}
-                                    @if(in_array($role->name, ['kasir-wash', 'karyawan-wash']))
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">
-                                            {{ __('Teknisi + Wash') }}
+                                    @if($isSystemRole)
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-2">
+                                            <i class="fa-solid fa-shield-halved me-1"></i>{{ __('System') }}
                                         </span>
                                     @endif
                                 </td>
@@ -114,7 +118,7 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         
-                                        @if(!in_array($role->name, ['admin', 'customer']))
+                                        @if(!$isSystemRole)
                                             <form action="{{ route('roles.destroy', $role) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this role?') }}');">
                                                 @csrf
                                                 @method('DELETE')

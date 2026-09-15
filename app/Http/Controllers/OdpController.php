@@ -28,9 +28,12 @@ class OdpController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Odp::with(['odc', 'region']);
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        if ($request->filled('region_id')) {
+        $query = Odp::with(['odc', 'region'])->forUserArea($user);
+
+        if ($request->filled('region_id') && $isSuperAdmin) {
             $query->where('region_id', $request->region_id);
         }
 
@@ -42,21 +45,27 @@ class OdpController extends Controller implements HasMiddleware
             });
         }
 
-        $odps = $query->latest()->paginate(10);
-        $regions = Region::orderBy('name')->get();
+        $odps = $query->latest()->paginate(10)->withQueryString();
+        $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 
-        return view('odps.index', compact('odps', 'regions'));
+        return view('odps.index', compact('odps', 'regions', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $regions = Region::all();
-        $odcs = Odc::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('odps.create', compact('regions', 'odcs'));
+        $regions = Region::orderBy('name')->get();
+        $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
+
+        return view('odps.create', compact('regions', 'odcs', 'isSuperAdmin'))
+            ->with('defaultRegionId', $user->coordinator?->region_id);
     }
 
     /**
@@ -191,12 +200,15 @@ class OdpController extends Controller implements HasMiddleware
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Odp $odp)
+    public function edit(Request $request, Odp $odp)
     {
-        $regions = Region::all();
-        $odcs = Odc::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('odps.edit', compact('odp', 'regions', 'odcs'));
+        $regions = Region::orderBy('name')->get();
+        $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
+
+        return view('odps.edit', compact('odp', 'regions', 'odcs', 'isSuperAdmin'));
     }
 
     /**
@@ -246,9 +258,11 @@ class OdpController extends Controller implements HasMiddleware
         return redirect()->route('odps.index')->with('success', __('ODP deleted successfully.'));
     }
 
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
-        return response()->streamDownload(function () {
+        $user = $request->user();
+
+        return response()->streamDownload(function () use ($user) {
             if (ob_get_length()) {
                 ob_end_clean();
             }
@@ -268,7 +282,7 @@ class OdpController extends Controller implements HasMiddleware
                 'Description',
             ]));
 
-            Odp::with(['odc', 'region'])->latest()->chunk(200, function ($odps) use ($writer) {
+            Odp::with(['odc', 'region'])->forUserArea($user)->latest()->chunk(200, function ($odps) use ($writer) {
                 foreach ($odps as $odp) {
                     $writer->addRow(Row::fromValues([
                         $odp->name,

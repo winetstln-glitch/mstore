@@ -119,7 +119,7 @@
                                             <table class="table table-hover align-middle mb-0">
                                                 <thead class="table-light">
                                                     @php
-                                                        $isAdminOrHrd = Auth::user()->hasAnyRole(['admin', 'direktur', App\Models\Role::HRD_MANAGER, 'owner', 'owner pendiri']);
+                                                        $isAdminOrHrd = Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']);
                                                     @endphp
                                                     <tr>
                                                         <th style="width: 50px;" class="ps-3">#</th>

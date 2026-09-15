@@ -126,7 +126,7 @@ class AssetController extends Controller implements HasMiddleware
         // Authorization check
         $user = Auth::user();
         // Check if user has management permission
-        $isManager = $user->hasPermission('inventory.manage') || $user->hasRole('admin');
+        $isManager = $user->hasPermission('inventory.manage') || $user->hasRole('finance');
 
         // Check if user is the holder
         $isHolder = false;

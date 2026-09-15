@@ -27,7 +27,7 @@ class DashboardWidgetTest extends TestCase
 
     public function test_noc_dashboard_requires_permission_and_loads_for_authorized_user(): void
     {
-        $role = Role::firstOrCreate(['name' => 'noc'], ['label' => 'Network Operations Center']);
+        $role = Role::firstOrCreate(['name' => 'noc-operator'], ['label' => 'Network Operations Center']);
         $permission = Permission::firstOrCreate(['name' => 'noc.dashboard.view'], ['label' => 'View NOC Dashboard', 'group' => 'NOC Center']);
         $role->permissions()->syncWithoutDetaching([$permission->id]);
 

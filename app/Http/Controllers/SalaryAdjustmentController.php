@@ -14,7 +14,7 @@ class SalaryAdjustmentController extends Controller
 {
     public function index(Request $request)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasPermission('kasbon.view') && ! Auth::user()->hasPermission('kasbon.manage')) {
             abort(403, 'Unauthorized');
         }
 
@@ -55,7 +55,7 @@ class SalaryAdjustmentController extends Controller
         $loans = $loanQuery->get();
 
         $users = User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['Direktur', 'Koordinator']);
+            $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
         })->where('is_active', true)
           ->with('role')
           ->orderBy('name')
@@ -95,7 +95,7 @@ class SalaryAdjustmentController extends Controller
 
     public function store(Request $request)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -114,7 +114,7 @@ class SalaryAdjustmentController extends Controller
 
     public function update(Request $request, SalaryAdjustment $salaryAdjustment)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -135,7 +135,7 @@ class SalaryAdjustmentController extends Controller
 
     public function destroy(SalaryAdjustment $salaryAdjustment)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 

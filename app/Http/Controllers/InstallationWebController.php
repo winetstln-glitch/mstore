@@ -60,7 +60,7 @@ class InstallationWebController extends Controller implements HasMiddleware
         }
 
         $installations = $query->latest()->paginate(10)->withQueryString();
-        $technicians = User::where('role_id', 3)->get(); // Assuming role_id 3 is technician
+        $technicians = User::whereHas('role', function($q) { $q->where('name', 'field-technician'); })->get();
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $ticketCoordinatorsByCustomer = $this->ticketCoordinatorsByCustomer($installations->pluck('customer_id')->filter()->unique()->values()->all());
 
@@ -73,7 +73,7 @@ class InstallationWebController extends Controller implements HasMiddleware
     public function create(Request $request)
     {
         $customers = Customer::all();
-        $technicians = User::where('role_id', 3)->get();
+        $technicians = User::whereHas('role', function($q) { $q->where('name', 'field-technician'); })->get();
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $selected_customer_id = $request->input('customer_id');
 
@@ -126,7 +126,7 @@ class InstallationWebController extends Controller implements HasMiddleware
     {
         $installation->load(['customer', 'technician', 'modemRecord.user']);
         $customers = Customer::all();
-        $technicians = User::where('role_id', 3)->get();
+        $technicians = User::whereHas('role', function($q) { $q->where('name', 'field-technician'); })->get();
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $selectedCoordinator = $this->latestInstallationTicketCoordinator((int) $installation->customer_id);
         $selectedCoordinatorId = $selectedCoordinator?->id;
@@ -176,7 +176,7 @@ class InstallationWebController extends Controller implements HasMiddleware
             return collect();
         }
 
-        return Ticket::with('coordinator')
+        return Ticket::with('field-leader')
             ->whereIn('customer_id', $customerIds)
             ->where('type', 'pasang_baru')
             ->orderByDesc('id')
@@ -187,7 +187,7 @@ class InstallationWebController extends Controller implements HasMiddleware
 
     private function latestInstallationTicketCoordinator(int $customerId): ?Coordinator
     {
-        return Ticket::with('coordinator')
+        return Ticket::with('field-leader')
             ->where('customer_id', $customerId)
             ->where('type', 'pasang_baru')
             ->latest('id')

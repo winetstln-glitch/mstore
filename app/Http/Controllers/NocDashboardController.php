@@ -17,20 +17,24 @@ class NocDashboardController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(NocMetricsService $metrics)
+    public function index(Request $request, NocMetricsService $metrics)
     {
-        $snapshot = $metrics->latestCached();
+        $user = $request->user();
+        $snapshot = $metrics->latestCached($user);
 
         return view('noc.dashboard', [
             'snapshot' => $snapshot,
+            'scopeRegion' => $user?->coordinator?->region,
+            'scopeCompany' => $user?->company,
         ]);
     }
 
     public function data(Request $request, NocMetricsService $metrics): JsonResponse
     {
-        $snapshot = $metrics->latestCached();
+        $user = $request->user();
+        $snapshot = $metrics->latestCached($user);
         if (! $snapshot) {
-            $snapshot = $metrics->capture();
+            $snapshot = $metrics->computeForUser($user);
         }
 
         return response()->json([

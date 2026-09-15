@@ -7,7 +7,21 @@
     <div class="col-12">
         <div class="card shadow-sm border-0 border-top border-4 border-primary">
             <div class="card-header  py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('HTB Management') }}</h5>
+                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+                    <h5 class="mb-0 fw-bold text-body-emphasis">{{ __('HTB Management') }}</h5>
+                    <div class="d-flex flex-wrap gap-1">
+                        @if(isset($scopeRegion) && $scopeRegion)
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                <i class="fa-solid fa-map-location-dot me-1"></i>Wilayah: {{ $scopeRegion->name }}
+                            </span>
+                        @endif
+                        @if(isset($scopeCompany) && $scopeCompany)
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="fa-solid fa-building me-1"></i>Perusahaan: {{ $scopeCompany->name }}
+                            </span>
+                        @endif
+                    </div>
+                </div>
                 @can('htb.create')
                 <a href="{{ route('htbs.create') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="{{ __('Add HTB') }}">
                     <i class="fa-solid fa-plus"></i> <span class="d-none d-sm-inline ms-1">{{ __('Add HTB') }}</span>

@@ -64,7 +64,7 @@
                     <span>{{ __('Dari total') }} {{ $stats['technician_total'] }} {{ __('teknisi aktif') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'field-technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -81,7 +81,7 @@
                     <span>{{ __('Belum melakukan absensi hari ini') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi tidak masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'field-technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat teknisi tidak masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -98,7 +98,7 @@
                     <span>{{ __('Dari total') }} {{ $stats['wash_employee_total'] }} {{ __('karyawan wash aktif') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'wash-operator', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -115,7 +115,7 @@
                     <span>{{ __('Belum melakukan absensi hari ini') }}</span>
                 </div>
             </div>
-            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
+            <a class="stretched-link" href="{{ route('dashboard', ['attendance_role' => 'wash-operator', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}" aria-label="Lihat karyawan wash tidak masuk"></a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
@@ -164,24 +164,24 @@
                         <input type="date" name="attendance_date" value="{{ $attendanceDate ?? now()->toDateString() }}" class="form-control form-control-sm" style="max-width: 170px;">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Terapkan</button>
                     </form>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
-                       class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'present' ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <a href="{{ route('dashboard', ['attendance_role' => 'field-technician', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'field-technician' && $attendanceState === 'present' ? 'btn-primary' : 'btn-outline-primary' }}">
                         Teknisi Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
-                       class="btn btn-sm {{ $attendanceRole === 'technician' && $attendanceState === 'not_present' ? 'btn-danger' : 'btn-outline-danger' }}">
+                    <a href="{{ route('dashboard', ['attendance_role' => 'field-technician', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'field-technician' && $attendanceState === 'not_present' ? 'btn-danger' : 'btn-outline-danger' }}">
                         Teknisi Tidak Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
-                       class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'present' ? 'btn-info' : 'btn-outline-info' }}">
+                    <a href="{{ route('dashboard', ['attendance_role' => 'wash-operator', 'attendance_state' => 'present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'wash-operator' && $attendanceState === 'present' ? 'btn-info' : 'btn-outline-info' }}">
                         Karyawan Wash Masuk
                     </a>
-                    <a href="{{ route('dashboard', ['attendance_role' => 'karyawan-wash', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
-                       class="btn btn-sm {{ $attendanceRole === 'karyawan-wash' && $attendanceState === 'not_present' ? 'btn-warning' : 'btn-outline-warning' }}">
+                    <a href="{{ route('dashboard', ['attendance_role' => 'wash-operator', 'attendance_state' => 'not_present', 'attendance_date' => $attendanceDate ?? now()->toDateString()]) }}"
+                       class="btn btn-sm {{ $attendanceRole === 'wash-operator' && $attendanceState === 'not_present' ? 'btn-warning' : 'btn-outline-warning' }}">
                         Karyawan Wash Tidak Masuk
                     </a>
                     <span class="badge bg-primary-subtle text-primary">
-                        {{ $attendanceRole === 'technician' ? 'Peran: Teknisi' : 'Peran: Karyawan Wash' }}
+                        {{ $attendanceRole === 'field-technician' ? 'Peran: Teknisi' : 'Peran: Karyawan Wash' }}
                     </span>
                     <span class="badge {{ $attendanceState === 'present' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
                         {{ $attendanceState === 'present' ? 'Status: Masuk' : 'Status: Tidak Masuk' }}
@@ -200,7 +200,7 @@
                             <th class="text-uppercase small text-muted border-0">{{ __('Status Hari Ini') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Jam Masuk') }}</th>
                             <th class="text-uppercase small text-muted border-0">{{ __('Jam Pulang') }}</th>
-                            @if($attendanceRole === 'technician')
+                            @if($attendanceRole === 'field-technician')
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status Tugas') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Tugas Aktif') }}</th>
                             @endif
@@ -232,7 +232,7 @@
                                 </td>
                                 <td>{{ $attendanceRow?->clock_in ? \Carbon\Carbon::parse($attendanceRow->clock_in)->format('H:i') : '-' }}</td>
                                 <td>{{ $attendanceRow?->clock_out ? \Carbon\Carbon::parse($attendanceRow->clock_out)->format('H:i') : '-' }}</td>
-                                @if($attendanceRole === 'technician')
+                                @if($attendanceRole === 'field-technician')
                                     <td>
                                         @if(($taskSummary['active_ticket_id'] ?? 0) > 0)
                                             <a href="{{ route('tickets.show', $taskSummary['active_ticket_id']) }}" class="text-decoration-none">
@@ -273,7 +273,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $attendanceRole === 'technician' ? 7 : 5 }}" class="text-center py-4 text-muted">{{ __('Tidak ada data karyawan untuk filter ini.') }}</td>
+                                <td colspan="{{ $attendanceRole === 'field-technician' ? 7 : 5 }}" class="text-center py-4 text-muted">{{ __('Tidak ada data karyawan untuk filter ini.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

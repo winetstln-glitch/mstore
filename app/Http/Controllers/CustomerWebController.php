@@ -57,7 +57,7 @@ class CustomerWebController extends Controller implements HasMiddleware
         $query = Customer::with('user');
 
         // Filter for Coordinator (Pengurus)
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('customer.view')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator && $coordinator->region_id) {
                 $query->whereHas('odp', function ($q) use ($coordinator) {
@@ -142,7 +142,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
     public function export(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('customer.view')) {
             abort(403);
         }
 
@@ -219,7 +219,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
     public function importFile(Request $request)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('customer.view')) {
             abort(403);
         }
 

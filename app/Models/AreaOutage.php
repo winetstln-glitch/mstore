@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AreaOutage extends Model
 {
+    use ScopesByUserArea;
+
     protected $fillable = [
         'title', 'description', 'type', 'status',
         'started_at', 'estimated_finish_at',

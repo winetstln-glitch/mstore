@@ -51,8 +51,8 @@ class AtkTransactionController extends Controller implements HasMiddleware
             ->first();
         $roleUserIds = \App\Models\User::query()
             ->where('is_active', true)
-            ->whereHas('role', function ($query) {
-                $query->where('name', 'kasir-atk');
+            ->whereHas('employee', function ($query) {
+                $query->where('department', 'ATK');
             })
             ->pluck('id');
         $presentCount = $roleUserIds->isEmpty()
@@ -64,7 +64,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
                 ->distinct('user_id')
                 ->count('user_id');
         $attendanceOverview = [
-            'role' => 'kasir-atk',
+            'role' => 'atk-cashier',
             'total' => $roleUserIds->count(),
             'present' => $presentCount,
             'not_present' => max($roleUserIds->count() - $presentCount, 0),

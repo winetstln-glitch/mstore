@@ -3,7 +3,7 @@
 @section('content')
 @php
     $authUser = Auth::user();
-    $isAdminOrFinance = $authUser->hasRole('admin') || $authUser->hasRole('finance');
+    $isAdminOrFinance = $authUser->hasAnyRole(['super-admin', 'manager', 'finance']) || $authUser->hasAnyRole(['super-admin', 'manager', 'finance']);
     $hasPermission = fn($p) => $authUser->hasPermission($p);
     
     $movementPeriod = request('movement_period', 'day');

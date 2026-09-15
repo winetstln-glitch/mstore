@@ -25,6 +25,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'job_title',
         'email',
         'username',
         'radius_username',
@@ -33,6 +34,7 @@ class User extends Authenticatable
         'role_id',
         'company_id',
         'company_branch_id',
+        'scope_config',
         'phone',
         'telegram_chat_id',
         'is_active',
@@ -64,7 +66,46 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'last_seen_at' => 'datetime',
+            'scope_config' => 'array',
         ];
+    }
+
+    public function getBuAttribute(): array
+    {
+        return (array) ($this->scope_config['bu'] ?? []);
+    }
+
+    public function getBuLevelAttribute(): ?string
+    {
+        $level = $this->scope_config['bu_level'] ?? null;
+        return is_string($level) && $level !== '' ? $level : null;
+    }
+
+    public function getDepartmentAttribute(): ?string
+    {
+        $dept = $this->scope_config['department'] ?? null;
+        return is_string($dept) && $dept !== '' ? $dept : null;
+    }
+
+    public function getFieldLevelAttribute(): ?string
+    {
+        $lvl = $this->scope_config['field_level'] ?? null;
+        return is_string($lvl) && $lvl !== '' ? $lvl : null;
+    }
+
+    public function isAssignedToBu(string $buCode): bool
+    {
+        $bu = $this->bu;
+        return in_array('ALL', $bu, true) || in_array(strtoupper($buCode), array_map('strtoupper', $bu), true);
+    }
+
+    public function displayName(): string
+    {
+        $name = trim((string) $this->name);
+        if ($this->job_title !== null && trim((string) $this->job_title) !== '') {
+            return $name.' ('.trim((string) $this->job_title).')';
+        }
+        return $name;
     }
 
     public function isOnline(int $thresholdSeconds = 90): bool
@@ -172,25 +213,32 @@ class User extends Authenticatable
 
     public static function normalizeRoleName(string $roleName): string
     {
-        $normalized = strtolower(trim($roleName));
-        $normalized = preg_replace('/[\s\-_]+/', ' ', $normalized);
-        $normalized = trim($normalized);
-        
-        $roleMapping = [
-            'administrator' => 'admin',
-            'director' => 'direktur',
-            'network operations center' => 'noc',
-            'coordinator' => 'koordinator',
-            'finance' => 'staf keuangan',
-            'staf keuangan' => 'staf keuangan',
-            'hrd manager' => Role::HRD_MANAGER,
-            'hrd' => Role::HRD_MANAGER,
-            'manager hrd' => Role::HRD_MANAGER,
-            'operator wash' => 'karyawan wash',
-            'karyawan wash' => 'karyawan wash',
-        ];
-        
-        return $roleMapping[$normalized] ?? $normalized;
+        $name = strtolower(trim($roleName));
+        $name = preg_replace('/[\s\-_]+/', '-', $name);
+        $name = trim($name, '-_ ');
+
+        $map = config('roles.normalize_map', []);
+        if (is_array($map) && isset($map[$name])) {
+            return (string) $map[$name];
+        }
+
+        $migrationMap = config('roles.migration_map', []);
+        if (is_array($migrationMap)) {
+            foreach (array_keys($migrationMap) as $oldName) {
+                if (strcasecmp($oldName, $name) === 0) {
+                    return (string) $migrationMap[$oldName]['new_role'];
+                }
+            }
+        }
+
+        $definitions = array_keys((array) config('roles.definitions', []));
+        foreach ($definitions as $roleKey) {
+            if (strcasecmp($roleKey, $name) === 0) {
+                return $roleKey;
+            }
+        }
+
+        return $name;
     }
 
     public function getNormalizedRoleNameAttribute(): ?string
@@ -206,11 +254,15 @@ class User extends Authenticatable
         if (! $this->role) {
             return false;
         }
-        
-        $normalizedCheckRole = self::normalizeRoleName($roleName);
-        $normalizedUserRole = $this->normalized_role_name;
-        
-        return $normalizedCheckRole === $normalizedUserRole;
+
+        $check = self::normalizeRoleName($roleName);
+        $userRole = $this->normalized_role_name;
+
+        if ($check === $userRole) {
+            return true;
+        }
+
+        return strcasecmp((string) $this->role->name, $roleName) === 0;
     }
 
     public function hasAnyRole(array $roleNames): bool
@@ -218,21 +270,24 @@ class User extends Authenticatable
         if (! $this->role) {
             return false;
         }
-        
-        $normalizedUserRole = $this->normalized_role_name;
-        
+
         foreach ($roleNames as $roleName) {
-            if (self::normalizeRoleName($roleName) === $normalizedUserRole) {
+            if ($this->hasRole((string) $roleName)) {
                 return true;
             }
         }
-        
+
         return false;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasAnyRole(Role::superAdminRoleNames());
     }
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->hasRole('admin') || $this->hasRole('direktur') || $this->hasRole('hrd-manager')) {
+        if ($this->isSuperAdmin()) {
             return true;
         }
 
@@ -330,12 +385,7 @@ class User extends Authenticatable
 
     private static function hasAttendanceCardColumn(): bool
     {
-        static $hasColumn = null;
-        if ($hasColumn === null) {
-            $hasColumn = Schema::hasColumn('users', 'attendance_card_code');
-        }
-
-        return $hasColumn;
+        return Schema::hasColumn('users', 'attendance_card_code');
     }
 
     public function assignRole($role)
@@ -345,5 +395,24 @@ class User extends Authenticatable
         }
         $this->role()->associate($role);
         $this->save();
+    }
+
+    public function getDailySalaryAttribute() {
+        return $this->employee?->daily_salary ?? 0;
+    }
+    public function getMonthlySalaryAttribute() {
+        return $this->employee?->monthly_salary ?? 0;
+    }
+    public function getBankNameAttribute() {
+        return $this->employee?->bank_name;
+    }
+    public function getBankAccountNumberAttribute() {
+        return $this->employee?->bank_account_number;
+    }
+    public function getBankAccountNameAttribute() {
+        return $this->employee?->bank_account_name;
+    }
+    public function getAttendanceCardCodeAttribute() {
+        return $this->employee?->attendance_card_code;
     }
 }

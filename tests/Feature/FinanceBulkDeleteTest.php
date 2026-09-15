@@ -36,7 +36,7 @@ class FinanceBulkDeleteTest extends TestCase
 
         // Setup Coordinator
         $this->coordinatorUser = User::factory()->create(['name' => 'Coordinator User']);
-        $roleCoordinator = Role::create(['name' => 'coordinator', 'guard_name' => 'web']);
+        $roleCoordinator = Role::create(['name' => 'field-leader', 'guard_name' => 'web']);
         $this->coordinatorUser->assignRole($roleCoordinator);
 
         $this->coordinator = Coordinator::create([

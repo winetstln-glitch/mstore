@@ -12,20 +12,20 @@ class EmployeeSyncService
     public static function positionRoleDepartmentMap(): array
     {
         return [
-            ['role' => Role::ADMIN,              'position' => 'Administrasi',     'department' => 'Administrasi', 'role_label' => 'Administrator'],
-            ['role' => Role::DIREKTUR,           'position' => 'Direktur',         'department' => 'Administrasi', 'role_label' => 'Direktur'],
-            ['role' => Role::HRD_MANAGER,        'position' => 'HRD Manager',      'department' => 'Administrasi', 'role_label' => 'HRD Manager'],
-            ['role' => Role::LEADER,             'position' => 'Leader',           'department' => 'Operasional',  'role_label' => 'Leader'],
-            ['role' => Role::CUSTOMER_SERVICE,   'position' => 'Customer Service', 'department' => 'Administrasi', 'role_label' => 'Customer Service'],
-            ['role' => Role::NOC,                'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
-            ['role' => Role::NOC_LEGACY,         'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
-            ['role' => Role::TECHNICIAN,         'position' => 'Teknisi',          'department' => 'Teknis',      'role_label' => 'Technician'],
-            ['role' => Role::COORDINATOR,        'position' => 'Koordinator',      'department' => 'Operasional',  'role_label' => 'Coordinator'],
-            ['role' => Role::FINANCE,            'position' => 'Keuangan',         'department' => 'Keuangan',     'role_label' => 'Finance Staff'],
-            ['role' => Role::KASIR_ATK,          'position' => 'Kasir ATK',        'department' => 'ATK',         'role_label' => 'Kasir ATK'],
-            ['role' => Role::KASIR_WASH,         'position' => 'Kasir Wash',       'department' => 'Wash',        'role_label' => 'Kasir Wash'],
-            ['role' => Role::KARYAWAN_WASH,      'position' => 'Operator Wash',    'department' => 'Wash',        'role_label' => 'Karyawan Wash'],
-            ['role' => Role::STAFF_GUDANG,       'position' => 'Staff Gudang',     'department' => 'Operasional',  'role_label' => 'Staff Gudang'],
+            ['role' => 'admin',              'position' => 'Administrasi',     'department' => 'Administrasi', 'role_label' => 'Administrator'],
+            ['role' => 'direktur',           'position' => 'Direktur',         'department' => 'Administrasi', 'role_label' => 'Direktur'],
+            ['role' => 'hrd-manager',        'position' => 'HRD Manager',      'department' => 'Administrasi', 'role_label' => 'HRD Manager'],
+            ['role' => 'leader',             'position' => 'Leader',           'department' => 'Operasional',  'role_label' => 'Leader'],
+            ['role' => 'customer-service',   'position' => 'Customer Service', 'department' => 'Administrasi', 'role_label' => 'Customer Service'],
+            ['role' => 'noc-operator',                'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
+            ['role' => 'noc-legacy',         'position' => 'NOC',              'department' => 'Teknis',      'role_label' => 'Network Operations Center'],
+            ['role' => 'technician',         'position' => 'Teknisi',          'department' => 'Teknis',      'role_label' => 'Technician'],
+            ['role' => 'field-leader',        'position' => 'Koordinator',      'department' => 'Operasional',  'role_label' => 'Coordinator'],
+            ['role' => 'finance',            'position' => 'Keuangan',         'department' => 'Keuangan',     'role_label' => 'Finance Staff'],
+            ['role' => 'atk-cashier',          'position' => 'Kasir ATK',        'department' => 'ATK',         'role_label' => 'Kasir ATK'],
+            ['role' => 'wash-cashier',         'position' => 'Kasir Wash',       'department' => 'Wash',        'role_label' => 'Kasir Wash'],
+            ['role' => 'wash-operator',      'position' => 'Operator Wash',    'department' => 'Wash',        'role_label' => 'Karyawan Wash'],
+            ['role' => 'wash-operator',       'position' => 'Staff Gudang',     'department' => 'Operasional',  'role_label' => 'Staff Gudang'],
         ];
     }
 
@@ -134,7 +134,7 @@ class EmployeeSyncService
     public function syncWashEmployeeFromUser(User $user): void
     {
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isKaryawanWash = $roleName === strtolower(Role::KARYAWAN_WASH);
+        $isKaryawanWash = $roleName === strtolower('wash-operator');
         $isActive = (bool) $user->is_active;
 
         try {
@@ -493,9 +493,9 @@ class EmployeeSyncService
     {
         $result = ['created' => 0, 'updated' => 0, 'deactivated' => 0, 'errors' => []];
 
-        $roleIdKaryawanWash = Role::query()->where('name', Role::KARYAWAN_WASH)->value('id');
+        $roleIdKaryawanWash = Role::query()->where('name', 'wash-operator')->value('id');
         if (! $roleIdKaryawanWash) {
-            $result['errors'][] = 'Role '.Role::KARYAWAN_WASH.' tidak ditemukan';
+            $result['errors'][] = 'Role '.'wash-operator'.' tidak ditemukan';
 
             return $result;
         }

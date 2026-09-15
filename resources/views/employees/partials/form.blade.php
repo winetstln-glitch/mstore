@@ -173,6 +173,33 @@
                         <input type="number" name="daily_salary" id="daily_salary" value="{{ old('daily_salary', $employee->daily_salary ?? 0) }}" class="form-control @error('daily_salary') is-invalid @enderror">
                         <div class="form-text x-small">{{ __('Isi jika ingin menggunakan nilai tetap per hari.') }}</div>
                     </div>
+                    <div class="col-md-4">
+                        <label for="attendance_card_code" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Kode ID Card Absensi') }}</label>
+                        <input type="text" name="attendance_card_code" id="attendance_card_code" value="{{ old('attendance_card_code', $employee->attendance_card_code ?? '') }}" class="form-control @error('attendance_card_code') is-invalid @enderror">
+                        <div class="form-text x-small">{{ __('Digunakan untuk scan barcode/QR presensi.') }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="bank_name" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Nama Bank') }}</label>
+                        <input type="text" name="bank_name" id="bank_name" value="{{ old('bank_name', $employee->bank_name ?? '') }}" class="form-control @error('bank_name') is-invalid @enderror" placeholder="Contoh: BCA, Mandiri">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="bank_account_number" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Nomor Rekening') }}</label>
+                        <input type="text" name="bank_account_number" id="bank_account_number" value="{{ old('bank_account_number', $employee->bank_account_number ?? '') }}" class="form-control @error('bank_account_number') is-invalid @enderror">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="bank_account_name" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Atas Nama') }}</label>
+                        <input type="text" name="bank_account_name" id="bank_account_name" value="{{ old('bank_account_name', $employee->bank_account_name ?? '') }}" class="form-control @error('bank_account_name') is-invalid @enderror">
+                    </div>
+                    <div class="col-md-6 mt-3 pt-3 border-top">
+                        <label for="annual_leave_quota" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Jatah Cuti Tahunan') }}</label>
+                        <input type="number" name="annual_leave_quota" id="annual_leave_quota" value="{{ old('annual_leave_quota', $employee->annual_leave_quota ?? 12) }}" class="form-control @error('annual_leave_quota') is-invalid @enderror" min="0">
+                        <div class="form-text x-small">{{ __('Jumlah hari cuti dalam setahun.') }}</div>
+                    </div>
+                    <div class="col-md-6 mt-3 pt-3 border-top">
+                        <label for="sick_leave_quota" class="form-label x-small fw-bold text-uppercase text-muted">{{ __('Jatah Cuti Sakit') }}</label>
+                        <input type="number" name="sick_leave_quota" id="sick_leave_quota" value="{{ old('sick_leave_quota', $employee->sick_leave_quota ?? 14) }}" class="form-control @error('sick_leave_quota') is-invalid @enderror" min="0">
+                        <div class="form-text x-small">{{ __('Jumlah batas izin sakit.') }}</div>
+                    </div>
                 </div>
             </div>
         </div>

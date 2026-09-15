@@ -140,13 +140,19 @@ class ProfileController extends Controller implements HasMiddleware
             unset($validated['avatar_base64']);
         }
 
-        $user->update($validated);
+        $userData = $validated;
+        unset($userData['bank_name'], $userData['bank_account_number'], $userData['bank_account_name']);
+        
+        $user->update($userData);
 
         $employee = $user->employee;
         if ($employee) {
             $employeeUpdate = [
                 'full_name' => $user->name,
                 'email' => $user->email,
+                'bank_name' => $validated['bank_name'] ?? $employee->bank_name,
+                'bank_account_number' => $validated['bank_account_number'] ?? $employee->bank_account_number,
+                'bank_account_name' => $validated['bank_account_name'] ?? $employee->bank_account_name,
             ];
 
             if (array_key_exists('avatar', $validated) && Schema::hasColumn('employees', 'id_card_photo_path')) {

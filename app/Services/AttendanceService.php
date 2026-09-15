@@ -21,7 +21,7 @@ class AttendanceService
             return false;
         }
 
-        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'owner', 'owner pendiri', 'leader', Role::HRD_MANAGER]);
+        return $user->hasAnyRole(['super-admin', 'manager', 'finance']);
     }
 
     public function isAdminOrHrdManager(?User $user): bool
@@ -30,7 +30,7 @@ class AttendanceService
             return false;
         }
 
-        return $user->hasAnyRole(['admin', 'finance', 'direktur', 'owner', 'owner pendiri', 'leader', Role::HRD_MANAGER]);
+        return $user->hasAnyRole(['super-admin', 'manager', 'finance']);
     }
 
     public function isUserCoordinator(?User $user): bool
@@ -39,7 +39,7 @@ class AttendanceService
             return false;
         }
 
-        return $user->hasRole(Role::COORDINATOR);
+        return $user->hasRole('field-leader');
     }
 
     public function isAttendanceEligibleUser(?User $user): bool
@@ -52,7 +52,8 @@ class AttendanceService
             return false;
         }
 
-        $excludedRoles = [Role::CUSTOMER, Role::DIREKTUR, 'owner', Role::COORDINATOR];
+        $excludedRoles = ['customer', 'partner', 'super-admin', 'manager', 'field-leader'];
+        
         return !$user->hasAnyRole($excludedRoles);
     }
 
@@ -251,7 +252,7 @@ class AttendanceService
         $today = now();
 
         $roleName = strtolower((string)($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, [Role::DIREKTUR, Role::COORDINATOR], true);
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'field-leader'], true);
 
         if (!$isExcludedFromSchedule) {
             if (Schema::hasTable('technician_daily_schedules')) {
@@ -354,7 +355,7 @@ class AttendanceService
     {
         $date = Carbon::parse($dateStr);
         $roleName = strtolower((string)($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, [Role::DIREKTUR, Role::COORDINATOR], true);
+        $isExcludedFromSchedule = in_array($roleName, ['direktur', 'field-leader'], true);
 
         if ($isExcludedFromSchedule) {
             return false;
@@ -440,7 +441,7 @@ class AttendanceService
     public function resolveScheduleGroup(User $user): string
     {
         $roleName = strtolower((string)($user->role?->name ?? ''));
-        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+        if (in_array($roleName, ['wash-cashier', 'wash-operator'], true)) {
             return 'wash';
         }
 

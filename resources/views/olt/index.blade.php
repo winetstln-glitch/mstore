@@ -6,10 +6,22 @@
 @section('content')
 <div class="container-fluid px-0">
     {{-- Header --}}
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
         <div>
             <h4 class="fw-bold mb-1">Manajemen OLT</h4>
             <p class="text-muted small mb-0">Kelola seluruh server OLT dan perangkat ONU</p>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+                @if(isset($scopeRegion) && $scopeRegion)
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        <i class="fa-solid fa-map-location-dot me-1"></i>Wilayah: {{ $scopeRegion->name }}
+                    </span>
+                @endif
+                @if(isset($scopeCompany) && $scopeCompany)
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                        <i class="fa-solid fa-building me-1"></i>Perusahaan: {{ $scopeCompany->name }}
+                    </span>
+                @endif
+            </div>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('olt.create') }}" class="btn btn-primary">
@@ -20,6 +32,45 @@
             </button>
         </div>
     </div>
+
+    @if(isset($isSuperAdmin) && $isSuperAdmin)
+    <form method="GET" action="{{ route('olt.index') }}" class="mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Pencarian</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 ps-0" placeholder="Cari nama OLT, IP, lokasi...">
+                        </div>
+                    </div>
+                    @if(isset($regions) && $regions)
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Wilayah</label>
+                        <select name="region_id" class="form-select">
+                            <option value="">Semua Wilayah</option>
+                            @foreach($regions as $region)
+                                <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-dark flex-grow-1">
+                            <i class="fa-solid fa-filter me-1"></i> Terapkan
+                        </button>
+                        <a href="{{ route('olt.index') }}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    @endif
 
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">

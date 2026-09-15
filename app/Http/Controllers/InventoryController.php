@@ -168,7 +168,7 @@ class InventoryController extends Controller implements HasMiddleware
             }
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasPermission('inventory.view')) {
             $query->where('user_id', Auth::id());
         }
 
@@ -704,7 +704,7 @@ class InventoryController extends Controller implements HasMiddleware
 
     public function downloadTemplate()
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasPermission('inventory.view')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -726,7 +726,7 @@ class InventoryController extends Controller implements HasMiddleware
 
     public function importExcel(Request $request)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasPermission('inventory.view')) {
             abort(403, 'Unauthorized action.');
         }
 

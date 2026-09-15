@@ -20,7 +20,7 @@ class AttendanceService
     {
         $group = $this->resolveUserGroup($user);
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'field-leader'], true);
 
         $status = null;
         $today = Carbon::today();
@@ -160,7 +160,7 @@ class AttendanceService
     public function resolveUserGroup(User $user): string
     {
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+        if (in_array($roleName, ['wash-cashier', 'wash-operator'], true)) {
             return 'wash';
         }
         static $washEmployeesCache = null;
@@ -181,7 +181,7 @@ class AttendanceService
             return false;
         }
         
-        $excludedRoles = ['customer', 'reseller', 'coordinator', 'direktur', 'owner', 'owner pendiri', 'owner-pendiri'];
+        $excludedRoles = ['customer', 'reseller', 'field-leader', 'direktur', 'owner', 'owner pendiri', 'owner-pendiri'];
         return ! $user->hasAnyRole($excludedRoles);
     }
 
@@ -190,7 +190,7 @@ class AttendanceService
         if (! $user->role) {
             return false;
         }
-        return $user->hasRole(Role::COORDINATOR);
+        return $user->hasRole('field-leader');
     }
 
     public function canViewAllAttendanceData(User $user): bool
@@ -199,7 +199,7 @@ class AttendanceService
             return false;
         }
         
-        return $user->hasAnyRole(['admin', 'finance', 'direktur', Role::HRD_MANAGER, 'owner', 'owner pendiri', 'leader']);
+        return $user->hasAnyRole(['super-admin', 'manager', 'finance']);
     }
 
     public function resolveAttendanceDeviceFingerprint($request): string
@@ -243,7 +243,7 @@ class AttendanceService
     public function resolveAttendanceUser(string $cardCode): ?User
     {
         return User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'field-leader']);
         })
         ->where('is_active', true)
         ->where(function ($q) use ($cardCode) {
@@ -268,6 +268,6 @@ class AttendanceService
             return false;
         }
         
-        return $user->hasAnyRole(['admin', 'direktur', Role::HRD_MANAGER, 'owner', 'owner pendiri']);
+        return $user->hasAnyRole(['super-admin', 'manager', 'finance']);
     }
 }

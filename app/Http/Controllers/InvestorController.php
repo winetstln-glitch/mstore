@@ -26,7 +26,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Investor::with('coordinator');
+        $query = Investor::with('field-leader');
 
         $month = $request->input('month');
 
@@ -45,7 +45,7 @@ class InvestorController extends Controller implements HasMiddleware
                 ->withSum('expenseTransactions', 'amount');
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator) {
                 $query->where('coordinator_id', $coordinator->id);
@@ -60,7 +60,7 @@ class InvestorController extends Controller implements HasMiddleware
     public function create()
     {
         $coordinators = [];
-        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
+        if (Auth::user()->hasRole('finance') || Auth::user()->hasRole('finance')) {
             $coordinators = Coordinator::all();
             $existingInvestors = Investor::orderBy('name')->get();
         } else {
@@ -109,7 +109,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function show(Investor $investor)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if (! $coordinator || $investor->coordinator_id !== $coordinator->id) {
                 abort(403);
@@ -127,7 +127,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function edit(Investor $investor)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if (! $coordinator || $investor->coordinator_id !== $coordinator->id) {
                 abort(403);
@@ -135,7 +135,7 @@ class InvestorController extends Controller implements HasMiddleware
         }
 
         $coordinators = [];
-        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance')) {
+        if (Auth::user()->hasRole('finance') || Auth::user()->hasRole('finance')) {
             $coordinators = Coordinator::all();
         } else {
             $coordinators = Coordinator::where('user_id', Auth::id())->get();
@@ -146,7 +146,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function update(Request $request, Investor $investor)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if (! $coordinator || $investor->coordinator_id !== $coordinator->id) {
                 abort(403);
@@ -167,7 +167,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function destroy(Investor $investor)
     {
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if (! $coordinator || $investor->coordinator_id !== $coordinator->id) {
                 abort(403);
@@ -185,7 +185,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function exportPdf(Request $request)
     {
-        $query = Investor::with('coordinator');
+        $query = Investor::with('field-leader');
 
         $month = $request->input('month');
 
@@ -204,7 +204,7 @@ class InvestorController extends Controller implements HasMiddleware
                 ->withSum('expenseTransactions', 'amount');
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator) {
                 $query->where('coordinator_id', $coordinator->id);
@@ -220,7 +220,7 @@ class InvestorController extends Controller implements HasMiddleware
 
     public function exportExcel(Request $request)
     {
-        $query = Investor::with('coordinator');
+        $query = Investor::with('field-leader');
 
         $month = $request->input('month');
 
@@ -239,7 +239,7 @@ class InvestorController extends Controller implements HasMiddleware
                 ->withSum('expenseTransactions', 'amount');
         }
 
-        if (! Auth::user()->hasRole('admin') && ! Auth::user()->hasRole('finance')) {
+        if (! Auth::user()->hasRole('finance') && ! Auth::user()->hasRole('finance')) {
             $coordinator = Coordinator::where('user_id', Auth::id())->first();
             if ($coordinator) {
                 $query->where('coordinator_id', $coordinator->id);

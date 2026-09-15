@@ -36,7 +36,7 @@ class TicketWebController extends Controller implements HasMiddleware
     {
         $user = Auth::user();
 
-        return $user && ($user->hasRole('admin') || $user->hasRole('leader') || $user->hasRole('direktur'));
+        return $user && ($user->hasRole('finance') || $user->hasRole('manager') || $user->hasRole('manager'));
     }
 
     public static function middleware(): array
@@ -410,7 +410,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Ticket $ticket)
     {
-        $isAdmin = Auth::user()->hasRole('admin');
+        $isAdmin = Auth::user()->hasRole('finance');
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
@@ -615,7 +615,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function complete(Request $request, Ticket $ticket)
     {
-        $isAdmin = Auth::user()->hasRole('admin');
+        $isAdmin = Auth::user()->hasRole('finance');
         $hasPermission = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
         if (! ($isAdmin || $hasPermission || $isAssigned)) {
@@ -739,7 +739,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function updateLocation(Request $request, Ticket $ticket)
     {
-        $isAdmin = Auth::user()->hasRole('admin');
+        $isAdmin = Auth::user()->hasRole('finance');
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
@@ -781,7 +781,7 @@ class TicketWebController extends Controller implements HasMiddleware
 
     public function updateCustomer(Request $request, Ticket $ticket)
     {
-        $isAdmin = Auth::user()->hasRole('admin');
+        $isAdmin = Auth::user()->hasRole('finance');
         $canEdit = Auth::user()->hasPermission('ticket.edit');
         $canComplete = Auth::user()->hasPermission('ticket.complete');
         $isAssigned = $ticket->technicians()->whereKey(Auth::id())->exists();
@@ -831,7 +831,7 @@ class TicketWebController extends Controller implements HasMiddleware
      */
     public function sendNotification(Request $request, Ticket $ticket, \App\Services\WhatsAppService $whatsappService)
     {
-        if (! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasRole('finance')) {
             abort(403);
         }
 

@@ -154,6 +154,45 @@
                             @enderror
                         </div>
 
+                        @if(isset($regions) && $regions)
+                        <div class="col-md-6">
+                            <label class="form-label">{{ __('Wilayah') }} <span class="text-danger">*</span></label>
+                            @if(isset($isSuperAdmin) && $isSuperAdmin)
+                            <select name="region_id" class="form-select @error('region_id') is-invalid @enderror" required>
+                                <option value="">-- {{ __('Pilih Wilayah') }} --</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ old('region_id', $defaultRegionId ?? '') == $region->id ? 'selected' : '' }}>
+                                        {{ $region->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @else
+                            <input type="text" class="form-control"
+                                   value="{{ $regions->firstWhere('id', old('region_id', $defaultRegionId ?? ''))?->name ?? '-' }}" readonly>
+                            <input type="hidden" name="region_id" value="{{ old('region_id', $defaultRegionId ?? '') }}">
+                            @endif
+                            @error('region_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ __('Perusahaan') }} <span class="text-danger">*</span></label>
+                            @if(isset($isSuperAdmin) && $isSuperAdmin && isset($companies))
+                            <select name="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
+                                <option value="">-- {{ __('Pilih Perusahaan') }} --</option>
+                                @foreach($companies as $company)
+                                    <option value="{{ $company->id }}" {{ old('company_id', $defaultCompanyId ?? '') == $company->id ? 'selected' : '' }}>
+                                        {{ $company->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @else
+                            <input type="text" class="form-control"
+                                   value="{{ isset($scopeCompany) && $scopeCompany ? $scopeCompany->name : (isset($companies) ? $companies->firstWhere('id', old('company_id', $defaultCompanyId ?? ''))?->name : '-') }}" readonly>
+                            <input type="hidden" name="company_id" value="{{ old('company_id', $defaultCompanyId ?? '') }}">
+                            @endif
+                            @error('company_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        @endif
+
                         <div class="col-md-4">
                             <label for="host" class="form-label">{{ __('Host IP / Domain') }}</label>
                             <input type="text" id="host" name="host" value="{{ old('host') }}" class="form-control @error('host') is-invalid @enderror" required>

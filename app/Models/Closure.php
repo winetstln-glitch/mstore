@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Closure extends Model
 {
-    use HasFactory;
+    use HasFactory, ScopesByUserArea;
 
     protected $fillable = [
         'name',

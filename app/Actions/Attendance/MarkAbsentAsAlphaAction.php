@@ -66,17 +66,17 @@ class MarkAbsentAsAlphaAction
             return null;
         }
 
-        $isExcludedFromSchedule = $user->hasAnyRole([Role::DIREKTUR, Role::COORDINATOR, 'owner', 'owner pendiri', 'owner-pendiri']);
+        $isExcludedFromSchedule = $user->hasAnyRole(['manager', 'field-leader', 'super-admin']);
         $eligibleRoles = [
-            Role::ADMIN,
-            Role::LEADER,
-            Role::FINANCE,
-            Role::HRD_MANAGER,
-            Role::NOC,
-            Role::TECHNICIAN,
-            Role::KASIR_ATK,
-            Role::KASIR_WASH,
-            Role::KARYAWAN_WASH,
+            'admin',
+            'leader',
+            'finance',
+            'hrd-manager',
+            'noc-operator',
+            'technician',
+            'atk-cashier',
+            'wash-cashier',
+            'wash-operator',
         ];
         $isEligible = $user->hasAnyRole($eligibleRoles);
 

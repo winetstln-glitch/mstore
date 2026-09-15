@@ -36,9 +36,10 @@ class UserController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $hiddenNames = Role::hiddenInUserManagement();
         $query = User::with('role')
-            ->whereHas('role', function ($q) {
-                $q->where('name', '!=', 'customer');
+            ->whereHas('role', function ($q) use ($hiddenNames) {
+                $q->whereNotIn('name', $hiddenNames);
             })
             ->latest();
 
@@ -69,9 +70,10 @@ class UserController extends Controller implements HasMiddleware
 
     public function export(Request $request)
     {
+        $hiddenNames = Role::hiddenInUserManagement();
         $query = User::with('role')
-            ->whereHas('role', function ($q) {
-                $q->where('name', '!=', 'customer');
+            ->whereHas('role', function ($q) use ($hiddenNames) {
+                $q->whereNotIn('name', $hiddenNames);
             })
             ->latest();
 
@@ -143,25 +145,40 @@ class UserController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $roles = Role::where('name', '!=', 'customer')->get();
+        $hiddenNames = Role::hiddenInUserManagement();
+        $roles = Role::whereNotIn('name', $hiddenNames)->orderBy('label')->get();
         $companies = Company::where('is_active', true)->orderBy('name')->get();
         $defaultCompanyId = (int) old('company_id', $companies->count() === 1 ? $companies->first()->id : null);
         $branches = $defaultCompanyId
             ? CompanyBranch::where('company_id', $defaultCompanyId)->where('is_active', true)->orderBy('name')->get()
             : collect();
 
-        return view('users.create', compact('roles', 'companies', 'branches'));
+        $buOptions = ['ATK' => 'Toko ATK', 'WASH' => 'Cuci Kendaraan', 'WEDDING' => 'Wedding & Event', 'CCTV' => 'CCTV Installation'];
+        $buLevelOptions = config('roles.bu_level_permissions', []);
+        $buLevelOptions = is_array($buLevelOptions) ? array_keys($buLevelOptions) : [];
+        $departmentOptions = ['HR' => 'HRD', 'Finance' => 'Keuangan', 'Operations' => 'Operasional', 'Support' => 'Support'];
+        $fieldLevelOptions = ['supervisor' => 'Supervisor / Team Leader', 'technician' => 'Teknisi'];
+
+        return view('users.create', compact(
+            'roles', 'companies', 'branches', 'buOptions', 'buLevelOptions', 'departmentOptions', 'fieldLevelOptions'
+        ));
     }
 
     public function store(Request $request)
     {
-        $customerRoleId = Role::where('name', 'customer')->value('id');
+        $hiddenRoleIds = Role::whereIn('name', Role::hiddenInUserManagement())->pluck('id')->toArray();
+        $buOptions = ['ATK', 'WASH', 'WEDDING', 'CCTV'];
+        $buLevelOptions = array_keys((array) config('roles.bu_level_permissions', []));
+        $departmentOptions = ['HR', 'Finance', 'Operations', 'Support'];
+        $fieldLevelOptions = ['supervisor', 'technician'];
+
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'radius_username' => ['nullable', 'string', 'max:255', 'unique:users,radius_username'],
-            'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
+            'role_id' => ['required', 'exists:roles,id', Rule::notIn($hiddenRoleIds)],
             'company_id' => ['required', 'exists:companies,id'],
             'company_branch_id' => ['nullable', 'exists:company_branches,id'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -171,6 +188,11 @@ class UserController extends Controller implements HasMiddleware
             'bank_account_number' => ['nullable', 'string', 'max:255'],
             'bank_account_name' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
+            'bu' => ['nullable', 'array'],
+            'bu.*' => ['required', 'string', Rule::in($buOptions)],
+            'bu_level' => ['nullable', 'string', Rule::in($buLevelOptions)],
+            'department' => ['nullable', 'string', Rule::in($departmentOptions)],
+            'field_level' => ['nullable', 'string', Rule::in($fieldLevelOptions)],
         ];
         if ($this->hasAttendanceCardColumn()) {
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', 'unique:users,attendance_card_code'];
@@ -186,6 +208,20 @@ class UserController extends Controller implements HasMiddleware
             if (! $belongsToCompany) {
                 $companyBranchId = null;
             }
+        }
+
+        $scopeConfig = [];
+        if (! empty($validated['bu'])) {
+            $scopeConfig['bu'] = array_values(array_map('strtoupper', $validated['bu']));
+        }
+        if (! empty($validated['bu_level'])) {
+            $scopeConfig['bu_level'] = $validated['bu_level'];
+        }
+        if (! empty($validated['department'])) {
+            $scopeConfig['department'] = $validated['department'];
+        }
+        if (! empty($validated['field_level'])) {
+            $scopeConfig['field_level'] = $validated['field_level'];
         }
 
         // Prevent duplicates by checking name too
@@ -208,59 +244,85 @@ class UserController extends Controller implements HasMiddleware
 
         $createData = [
             'name' => $validated['name'],
+            'job_title' => $validated['job_title'] ?? null,
             'email' => $validated['email'] ?? null,
             'username' => $username,
             'radius_username' => $validated['radius_username'] ?? null,
-            'password' => Hash::make('12345678'),
+            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
             'role_id' => $validated['role_id'],
             'company_id' => $validated['company_id'],
             'company_branch_id' => $companyBranchId,
+            'scope_config' => $scopeConfig !== [] ? $scopeConfig : null,
             'phone' => $validated['phone'] ?? null,
+            'is_active' => $request->boolean('is_active'),
+        ];
+        
+        $createdUser = User::create($createData);
+
+        // Sync to employee
+        app(\App\Services\EmployeeSyncService::class)->syncFromUser($createdUser);
+        
+        $employeeUpdate = [
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'monthly_salary' => $validated['monthly_salary'] ?? 0,
             'bank_name' => $validated['bank_name'] ?? null,
             'bank_account_number' => $validated['bank_account_number'] ?? null,
             'bank_account_name' => $validated['bank_account_name'] ?? null,
-            'is_active' => $request->boolean('is_active'),
         ];
         if ($this->hasAttendanceCardColumn()) {
-            $createData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? ''));
+            $employeeUpdate['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? '')) ?: \App\Models\User::generateUniqueAttendanceCardCode(\App\Models\User::defaultAttendanceCardCodeById((int) $createdUser->id), (int) $createdUser->id);
         }
-        $createdUser = User::create($createData);
 
-        // Sync to employee
-        app(\App\Services\EmployeeSyncService::class)->syncFromUser($createdUser);
-
-        if ($this->hasAttendanceCardColumn() && trim((string) $createdUser->attendance_card_code) === '') {
-            $createdUser->update([
-                'attendance_card_code' => User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $createdUser->id), (int) $createdUser->id),
-            ]);
-        }
+        \App\Models\Employee::query()
+            ->where('user_id', $createdUser->id)
+            ->update($employeeUpdate);
 
         return redirect()->route('users.index')->with('success', __('User created successfully.'));
     }
 
     public function edit(User $user)
     {
-        $roles = Role::where('name', '!=', 'customer')->get();
+        $hiddenNames = Role::hiddenInUserManagement();
+        $roles = Role::whereNotIn('name', $hiddenNames)->orderBy('label')->get();
         $companies = Company::where('is_active', true)->orderBy('name')->get();
         $companyId = (int) old('company_id', $user->company_id ?? ($companies->count() === 1 ? $companies->first()->id : null));
         $branches = $companyId
             ? CompanyBranch::where('company_id', $companyId)->where('is_active', true)->orderBy('name')->get()
             : collect();
 
-        return view('users.edit', compact('user', 'roles', 'companies', 'branches'));
+        $buOptions = ['ATK' => 'Toko ATK', 'WASH' => 'Cuci Kendaraan', 'WEDDING' => 'Wedding & Event', 'CCTV' => 'CCTV Installation'];
+        $buLevelOptions = config('roles.bu_level_permissions', []);
+        $buLevelOptions = is_array($buLevelOptions) ? array_keys($buLevelOptions) : [];
+        $departmentOptions = ['HR' => 'HRD', 'Finance' => 'Keuangan', 'Operations' => 'Operasional', 'Support' => 'Support'];
+        $fieldLevelOptions = ['supervisor' => 'Supervisor / Team Leader', 'technician' => 'Teknisi'];
+
+        $selectedBu = old('bu', $user->bu);
+        $selectedBuLevel = old('bu_level', $user->bu_level);
+        $selectedDepartment = old('department', $user->department);
+        $selectedFieldLevel = old('field_level', $user->field_level);
+
+        return view('users.edit', compact(
+            'user', 'roles', 'companies', 'branches',
+            'buOptions', 'buLevelOptions', 'departmentOptions', 'fieldLevelOptions',
+            'selectedBu', 'selectedBuLevel', 'selectedDepartment', 'selectedFieldLevel'
+        ));
     }
 
     public function update(Request $request, User $user)
     {
-        $customerRoleId = Role::where('name', 'customer')->value('id');
+        $hiddenRoleIds = Role::whereIn('name', Role::hiddenInUserManagement())->pluck('id')->toArray();
+        $buOptions = ['ATK', 'WASH', 'WEDDING', 'CCTV'];
+        $buLevelOptions = array_keys((array) config('roles.bu_level_permissions', []));
+        $departmentOptions = ['HR', 'Finance', 'Operations', 'Support'];
+        $fieldLevelOptions = ['supervisor', 'technician'];
+
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'radius_username' => ['nullable', 'string', 'max:255', Rule::unique('users', 'radius_username')->ignore($user->id)],
-            'role_id' => ['required', 'exists:roles,id', Rule::notIn([$customerRoleId])],
+            'role_id' => ['required', 'exists:roles,id', Rule::notIn($hiddenRoleIds)],
             'company_id' => ['required', 'exists:companies,id'],
             'company_branch_id' => ['nullable', 'exists:company_branches,id'],
             'phone' => ['nullable', 'string', 'max:20'],
@@ -270,6 +332,11 @@ class UserController extends Controller implements HasMiddleware
             'bank_account_number' => ['nullable', 'string', 'max:255'],
             'bank_account_name' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
+            'bu' => ['nullable', 'array'],
+            'bu.*' => ['required', 'string', Rule::in($buOptions)],
+            'bu_level' => ['nullable', 'string', Rule::in($buLevelOptions)],
+            'department' => ['nullable', 'string', Rule::in($departmentOptions)],
+            'field_level' => ['nullable', 'string', Rule::in($fieldLevelOptions)],
         ];
         if ($this->hasAttendanceCardColumn()) {
             $rules['attendance_card_code'] = ['nullable', 'string', 'max:255', Rule::unique('users', 'attendance_card_code')->ignore($user->id)];
@@ -285,6 +352,20 @@ class UserController extends Controller implements HasMiddleware
             if (! $belongsToCompany) {
                 $companyBranchId = null;
             }
+        }
+
+        $scopeConfig = [];
+        if (! empty($validated['bu'])) {
+            $scopeConfig['bu'] = array_values(array_map('strtoupper', $validated['bu']));
+        }
+        if (! empty($validated['bu_level'])) {
+            $scopeConfig['bu_level'] = $validated['bu_level'];
+        }
+        if (! empty($validated['department'])) {
+            $scopeConfig['department'] = $validated['department'];
+        }
+        if (! empty($validated['field_level'])) {
+            $scopeConfig['field_level'] = $validated['field_level'];
         }
 
         $existing = User::findExistingUser([
@@ -305,34 +386,39 @@ class UserController extends Controller implements HasMiddleware
 
         $updateData = [
             'name' => $validated['name'],
+            'job_title' => $validated['job_title'] ?? null,
             'email' => $validated['email'] ?? null,
             'username' => $username,
             'radius_username' => $validated['radius_username'] ?? null,
             'role_id' => $validated['role_id'],
             'company_id' => $validated['company_id'],
             'company_branch_id' => $companyBranchId,
+            'scope_config' => $scopeConfig !== [] ? $scopeConfig : null,
             'phone' => $validated['phone'] ?? null,
+            'is_active' => $request->boolean('is_active'),
+        ];
+        
+        $user->update($updateData);
+
+        $employeeUpdate = [
+            'full_name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'position' => $user->role?->label ?? 'Karyawan',
+            'department' => app(\App\Services\EmployeeSyncService::class)->departmentFromRole($user->role?->name),
             'daily_salary' => $validated['daily_salary'] ?? 0,
             'monthly_salary' => $validated['monthly_salary'] ?? 0,
             'bank_name' => $validated['bank_name'] ?? null,
             'bank_account_number' => $validated['bank_account_number'] ?? null,
             'bank_account_name' => $validated['bank_account_name'] ?? null,
-            'is_active' => $request->boolean('is_active'),
         ];
         if ($this->hasAttendanceCardColumn()) {
-            $updateData['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? '')) ?: User::generateUniqueAttendanceCardCode(User::defaultAttendanceCardCodeById((int) $user->id), (int) $user->id);
+            $employeeUpdate['attendance_card_code'] = trim((string) ($validated['attendance_card_code'] ?? '')) ?: \App\Models\User::generateUniqueAttendanceCardCode(\App\Models\User::defaultAttendanceCardCodeById((int) $user->id), (int) $user->id);
         }
-        $user->update($updateData);
 
         \App\Models\Employee::query()
             ->where('user_id', $user->id)
-            ->update([
-                'full_name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->role?->label ?? 'Karyawan',
-                'department' => app(\App\Services\EmployeeSyncService::class)->departmentFromRole($user->role?->name),
-            ]);
+            ->update($employeeUpdate);
 
         if ($request->boolean('reset_default_password')) {
             $user->update([
@@ -345,8 +431,8 @@ class UserController extends Controller implements HasMiddleware
 
     public function destroy(User $user)
     {
-        if (! auth()->user()?->hasRole('admin')) {
-            return back()->with('error', __('Penghapusan akun hanya dapat dilakukan oleh admin.'));
+        if (! auth()->user()?->isSuperAdmin()) {
+            return back()->with('error', __('Penghapusan akun hanya dapat dilakukan oleh super admin.'));
         }
 
         if ($user->id === auth()->id()) {
@@ -460,12 +546,7 @@ class UserController extends Controller implements HasMiddleware
 
     private function hasAttendanceCardColumn(): bool
     {
-        static $hasColumn = null;
-        if ($hasColumn === null) {
-            $hasColumn = Schema::hasColumn('users', 'attendance_card_code');
-        }
-
-        return $hasColumn;
+        return true;
     }
 
     private function buildUsernameFromName(string $name, ?string $fallbackEmail = null, ?int $ignoreId = null): string

@@ -21,7 +21,7 @@ class ReportingCenterController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:report.noc.export', only: ['noc', 'nocPdf', 'nocExcel']),
+            new Middleware('permission:report.noc.export', only: ['noc-operator', 'nocPdf', 'nocExcel']),
             new Middleware('permission:report.whatsapp.export', only: ['whatsapp', 'whatsappPdf', 'whatsappExcel']),
             new Middleware('permission:report.sla.export', only: ['sla', 'slaPdf', 'slaExcel']),
             new Middleware('permission:report.wedding.export', only: ['wedding', 'weddingPdf', 'weddingExcel']),

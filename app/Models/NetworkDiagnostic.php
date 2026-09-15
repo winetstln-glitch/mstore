@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NetworkDiagnostic extends Model
 {
+    use ScopesByUserArea;
+
     protected $fillable = [
         'customer_id', 'ticket_id',
         'diagnosis_key', 'status',

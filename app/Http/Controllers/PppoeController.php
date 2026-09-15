@@ -17,7 +17,7 @@ class PppoeController extends Controller
         $routers = Router::where('is_active', true)->get();
         $router = null;
 
-        if ($user->coordinator && $user->coordinator->router_id && ! $user->hasRole('admin')) {
+        if ($user->coordinator && $user->coordinator->router_id && ! $user->hasRole('finance')) {
             $router = Router::find($user->coordinator->router_id);
         } elseif ($request->has('router_id')) {
             $router = Router::find($request->router_id);

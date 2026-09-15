@@ -11,7 +11,7 @@
     for ($d = $rangeStart->copy(); $d->lte($rangeEnd); $d->addDay()) {
         $days[] = $d->copy();
     }
-    $canManage = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage');
+    $canManage = Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasPermission('schedule.manage');
 @endphp
 
 {{-- Date Range Filter Bar --}}

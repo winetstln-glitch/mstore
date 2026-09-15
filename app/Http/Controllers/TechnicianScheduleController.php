@@ -59,7 +59,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
 
         $techniciansQuery = $this->scheduleUsersQuery();
 
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -522,7 +522,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $selectedShift = (string) $request->input('shift', 'all');
 
         $techniciansQuery = $this->scheduleUsersQuery();
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
 
@@ -716,7 +716,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $selectedShift = (string) $request->input('shift', 'all');
 
         $techniciansQuery = $this->scheduleUsersQuery();
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
         $technicians = $techniciansQuery->orderBy('name')->get();
@@ -1538,54 +1538,42 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
     private function scheduleIncludedRoleNames(): array
     {
         return [
-            'technician',
-            'noc',
-            'network-operations-center',
+            'field-technician',
+            'noc-operator',
+            'wash-cashier', 'wash-operator',
             'finance',
-            'kasir-atk',
-            'kasir-wash',
-            'karyawan-wash',
+            'finance',
         ];
     }
 
     private function scheduleExcludedRoleNames(): array
     {
         return [
-            'admin',
-            'direktur',
-            'coordinator',
-            'koordinator',
-            'owner',
-            'owner-pendiri',
+            'super-admin',
+            'manager',
+            'field-leader',
+            'partner',
             'customer',
-            'reseller',
+            'manager',
         ];
     }
 
     private function scheduleRoleIds(): array
     {
         return Role::query()
-            ->whereIn('name', [
-                'technician',
-                'karyawan-wash',
-                'kasir-wash',
-                'kasir-atk',
-                'finance',
-                'noc',
-                'network-operations-center',
-            ])
+            ->whereIn('name', $this->scheduleIncludedRoleNames())
             ->pluck('id', 'name')
             ->toArray();
     }
 
     private function ensureScheduleUsers(): void
     {
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('finance')) {
             return;
         }
 
         $roleIds = $this->scheduleRoleIds();
-        $fallbackRoleId = $roleIds['technician'] ?? $roleIds['noc'] ?? $roleIds['network-operations-center'] ?? null;
+        $fallbackRoleId = $roleIds['technician'] ?? $roleIds['noc-operator'] ?? $roleIds['network-operations-center'] ?? null;
         if (! $fallbackRoleId) {
             return;
         }
@@ -1629,10 +1617,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                     $roleId = $fallbackRoleId;
                     if ($department === 'wash') {
                         $roleId = str_contains($position, 'kasir')
-                            ? ($roleIds['kasir-wash'] ?? $roleIds['karyawan-wash'] ?? $fallbackRoleId)
-                            : ($roleIds['karyawan-wash'] ?? $fallbackRoleId);
+                            ? ($roleIds['wash-cashier'] ?? $roleIds['wash-operator'] ?? $fallbackRoleId)
+                            : ($roleIds['wash-operator'] ?? $fallbackRoleId);
                     } elseif ($department === 'atk') {
-                        $roleId = $roleIds['kasir-atk'] ?? $fallbackRoleId;
+                        $roleId = $roleIds['atk-cashier'] ?? $fallbackRoleId;
                     } elseif ($department === 'keuangan') {
                         $roleId = $roleIds['finance'] ?? $fallbackRoleId;
                     } elseif ($department === 'teknis' || str_contains($position, 'teknisi') || str_contains($position, 'technician')) {
@@ -1674,7 +1662,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
                         }
                     }
 
-                    $roleId = $roleIds['karyawan-wash'] ?? $fallbackRoleId;
+                    $roleId = $roleIds['wash-operator'] ?? $fallbackRoleId;
 
                     $email = $username.'@mstore.local';
                     $emailCounter = 1;
@@ -1760,10 +1748,10 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             if ($department === '') {
                 $roleName = strtolower((string) ($user->role?->name ?? ''));
                 $department = match ($roleName) {
-                    'technician', 'noc', 'network-operations-center' => 'Teknis',
+                    'technician', 'noc-operator', 'network-operations-center' => 'Teknis',
                     'finance' => 'Keuangan',
-                    'kasir-atk' => 'ATK',
-                    'kasir-wash', 'karyawan-wash' => 'Wash',
+                    'atk-cashier' => 'ATK',
+                    'wash-cashier', 'wash-operator' => 'Wash',
                     default => 'Operasional',
                 };
             }
@@ -1771,9 +1759,9 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
             $group = 'lainnya';
             $deptLower = strtolower($department);
             $roleLower = strtolower((string) ($user->role?->name ?? ''));
-            if ($deptLower === 'wash' || in_array($roleLower, ['kasir-wash', 'karyawan-wash'], true)) {
+            if ($deptLower === 'wash' || in_array($roleLower, ['wash-cashier', 'wash-operator'], true)) {
                 $group = 'wash';
-            } elseif ($deptLower === 'teknis' || in_array($roleLower, ['technician', 'noc', 'network-operations-center'], true)) {
+            } elseif ($deptLower === 'teknis' || in_array($roleLower, ['technician', 'noc-operator', 'network-operations-center'], true)) {
                 $group = 'teknisi';
             }
 
@@ -1789,7 +1777,7 @@ class TechnicianScheduleController extends Controller implements HasMiddleware
         $month = (int) $request->input('month', now()->month);
 
         $techniciansQuery = $this->scheduleUsersQuery();
-        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('admin')) {
+        if (! Auth::user()->hasPermission('schedule.manage') && ! Auth::user()->hasRole('finance')) {
             $techniciansQuery->where('id', Auth::id());
         }
         $technicians = $techniciansQuery->orderBy('name')->get();

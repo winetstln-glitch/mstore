@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', config('app.name', 'Mstore Gt Wash'))</title>
@@ -68,6 +68,8 @@
         </div>
         <div class="list-group list-group-flush pb-2">
             @php
+                $authUser = auth()->user();
+                $isAdmin = $authUser && $authUser->isSuperAdmin();
                 $permissionMap = $permissionMap ?? [];
                 $sidebarMenu = $sidebarMenu ?? [];
                 $hasPermission = static function (string $permission) use ($authUser, $isAdmin, $permissionMap): bool {
@@ -980,7 +982,7 @@
                                 <i class="fa-regular fa-envelope-open"></i> Cuti/Izin Saya
                             </a>
                         @endif
-                        @if($hasRole(\App\Models\Role::ADMIN) || $hasRole(\App\Models\Role::FINANCE) || $hasRole(\App\Models\Role::HRD_MANAGER))
+                        @if($hasRole('super-admin') || $hasRole('finance') || $hasRole('manager'))
                         <a href="{{ route('technicians.kasbon.index') }}" class="sidebar-item {{ $routeIs('technicians.kasbon.*') ? 'active' : '' }}">
                             <i class="fa-solid fa-coins"></i> {{ __('Rincian Kasbon') }}
                         </a>

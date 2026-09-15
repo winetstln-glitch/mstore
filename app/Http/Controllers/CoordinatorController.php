@@ -82,7 +82,7 @@ class CoordinatorController extends Controller implements HasMiddleware
             if ($existing) {
                 $userId = $existing->id;
             } else {
-                $role = Role::where('name', 'coordinator')->first();
+                $role = Role::where('name', 'field-leader')->first();
                 $user = User::create([
                     'name' => $validated['name'],
                     'email' => $validated['email'],
@@ -115,7 +115,7 @@ class CoordinatorController extends Controller implements HasMiddleware
         $users = User::orderBy('name')->get();
         $routers = Router::where('is_active', true)->orderBy('name')->get();
 
-        return view('coordinators.edit', compact('coordinator', 'regions', 'users', 'routers'));
+        return view('coordinators.edit', compact('field-leader', 'regions', 'users', 'routers'));
     }
 
     /**

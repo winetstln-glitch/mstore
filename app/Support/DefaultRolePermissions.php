@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\Role;
 use Illuminate\Support\Collection;
 
 class DefaultRolePermissions
@@ -10,175 +9,87 @@ class DefaultRolePermissions
     public static function definitions(): array
     {
         return [
-            Role::ADMIN => [
-                'label' => 'Administrator',
+            'super-admin' => [
+                'label' => 'Super Administrator',
                 'grants_all' => true,
             ],
-            Role::DIREKTUR => [
-                'label' => 'Direktur',
-                'grants_all' => true,
-            ],
-            Role::LEADER => [
-                'label' => 'Leader',
+
+            'manager' => [
+                'label' => 'Manager',
                 'permissions' => [
                     'dashboard.view',
-                    'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.delete', 'ticket.complete',
-                    'attendance.view', 'attendance.report',
-                    'schedule.view', 'schedule.manage',
-                    'leave.view', 'leave.create', 'leave.edit',
-                    'employee.view',
-                    'inventory.view',
-                    'map.view',
-                    'profile.view', 'profile.update',
-                    'notification.view', 'notification.manage',
-                ],
-            ],
-            Role::NOC => [
-                'label' => 'Network Operations Center',
-                'permissions' => [
-                    'dashboard.view',
-                    'customer.view',
-                    'installation.view',
-                    'package.view',
-                    'pppoe.view',
-                    'hotspot.view',
-                    'voucher.view',
-                    'genieacs.view',
-                    'genieacs_server.view',
-                    'map.view',
-                    'router.view',
-                    'calculator.view',
-                    'olt.view',
-                    'odc.view',
-                    'odp.view',
-                    'closure.view',
-                    'htb.view',
-                    'ticket.view',
-                    'modem-data.view',
-                    'sla.monitoring.view',
-                    'sla.escalation.view',
-                    'noc.dashboard.view',
-                    'noc.operational.view',
-                    'noc.diagnostic_logs.view',
-                    'noc.olt_monitoring.view',
-                    'noc.fiber_monitoring.view',
-                    'report.noc.export',
-                    'report.sla.export',
-                    'profile.view', 'profile.update',
-                    'notification.view', 'notification.manage',
-                ],
-            ],
-            Role::NOC_LEGACY => [
-                'label' => 'Network Operations Center',
-                'inherits' => Role::NOC,
-            ],
-            Role::TECHNICIAN => [
-                'label' => 'Technician',
-                'permissions' => [
-                    'dashboard.view',
-                    'ticket.view', 'ticket.edit', 'ticket.complete',
-                    'installation.view', 'installation.edit',
-                    'attendance.view', 'attendance.create', 'attendance.edit',
-                    'schedule.view',
-                    'leave.view', 'leave.create',
-                    'map.view',
-                    'odc.view', 'odc.edit',
-                    'odp.view', 'odp.edit',
-                    'inventory.view', 'inventory.pickup',
-                    'modem-data.view', 'modem-data.create',
-                    'calculator.view',
-                    'profile.view', 'profile.update',
-                    'notification.view',
-                    'sla.monitoring.view',
-                ],
-            ],
-            Role::COORDINATOR => [
-                'label' => 'Coordinator',
-                'permissions' => [
-                    'dashboard.view',
-                    'customer.view',
                     'finance.view',
-                    'inventory.view', 'inventory.manage', 'inventory.pickup',
+                    'finance.report',
+                    'investor.view',
                     'map.view',
-                    'odc.view',
-                    'odp.view',
-                    'profile.view', 'profile.update',
+                    'customer.view',
+                    'ticket.view',
+                    'atk.*',
+                    'wash.*',
+                    'wedding.*',
+                    'cctv.*',
+                    'inventory.view',
+                    'attendance.*',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'schedule.*',
+                    'report.*.export',
+                    'profile.view',
+                    'profile.update',
                     'notification.view',
-                ],
-            ],
-            Role::CUSTOMER_SERVICE => [
-                'label' => 'Customer Service',
-                'permissions' => [
-                    'dashboard.view',
-                    'customer.view', 'customer.create', 'customer.edit',
-                    'installation.view',
-                    'package.view',
-                    'ticket.view', 'ticket.create', 'ticket.edit',
-                    'chat.view', 'chat.manage',
-                    'whatsapp.analytics.view',
-                    'profile.view', 'profile.update',
-                    'notification.view',
+                    'notification.manage',
+                    'kasbon.view',
+                    'kasbon.manage',
                 ],
             ],
 
-            Role::CUSTOMER => [
-                'label' => 'Customer',
-                'permissions' => [],
-            ],
-            Role::RESELLER => [
-                'label' => 'Reseller',
+            'finance' => [
+                'label' => 'Finance / Admin Keuangan',
                 'permissions' => [
                     'dashboard.view',
-                    'customer.view', 'customer.create', 'customer.edit', 'customer.export',
-                    'ticket.view', 'ticket.create', 'ticket.edit', 'ticket.complete',
-                    'installation.view', 'installation.create', 'installation.edit',
-                    'package.view',
-                    'hotspot.view',
-                    'pppoe.view',
-                    'map.view',
-                    'profile.view', 'profile.update',
-                    'notification.view',
-                ],
-            ],
-            Role::FINANCE => [
-                'label' => 'Finance Staff',
-                'permissions' => [
-                    'dashboard.view',
-                    'finance.view', 'finance.manage',
-                    'accounting.view',
+                    'finance.*',
                     'investor.view',
-                    'attendance.view', 'attendance.report',
-                    'profile.view', 'profile.update',
-                    'notification.view', 'notification.manage',
-                ],
-            ],
-            Role::HRD_MANAGER => [
-                'label' => 'HRD Manager',
-                'grants_all' => true,
-            ],
-            Role::KASIR_ATK => [
-                'label' => 'Kasir ATK',
-                'permissions' => [
-                    'atk.view', 'atk.pos', 'atk.report', 'atk.cash-register.manage', 'atk.manage',
-                    'receipt.view', 'receipt.manage', 'receipt.template.view',
-                    'fee.view', 'fee.manage',
-                    'attendance.view', 'attendance.create',
-                    'profile.view', 'profile.update',
+                    'investor.create',
+                    'investor.edit',
+                    'accounting.*',
+                    'receipt.*',
+                    'fee.*',
+                    'payment.*',
+                    'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
+                    'attendance.delete',
+                    'attendance.report',
+                    'leave.*',
+                    'schedule.*',
+                    'employee.view',
+                    'employee.create',
+                    'employee.edit',
+                    'ticket.view',
+                    'ticket.edit',
+                    'customer.view',
+                    'customer.create',
+                    'customer.edit',
+                    'kasbon.view',
+                    'kasbon.manage',
+                    'report.*.export',
+                    'profile.view',
+                    'profile.update',
                     'notification.view',
+                    'notification.manage',
                 ],
             ],
-            Role::KASIR_WASH => [
-                'label' => 'Kasir Wash',
+
+            'wash-cashier' => [
+                'label' => 'Kasir POS Wash',
                 'permissions' => [
                     'dashboard.view',
-                    'attendance.view', 'attendance.create',
-                    'schedule.view',
-                    'leave.view', 'leave.create', 'leave.edit',
-                    'wash.view', 'wash.pos', 'wash.report', 'wash.manage',
-                    'wash.member.view',
-                    'wash.loyalty.view',
-                    'wash.reward.view',
-                    'wash.expense.view', 'wash.expense.create', 'wash.expense.update', 'wash.expense.delete',
+                    'wash.view',
+                    'wash.pos',
+                    'wash.report',
+                    'wash.expense.view',
+                    'wash.expense.create',
                     'wash.shift.view',
                     'wash.shift.open',
                     'wash.shift.close',
@@ -188,29 +99,180 @@ class DefaultRolePermissions
                     'wash.closing.create',
                     'wash.supplier.view',
                     'wash.package.view',
-                    'profile.view', 'profile.update',
-                    'notification.view',
-                ],
-            ],
-            Role::KARYAWAN_WASH => [
-                'label' => 'Karyawan Wash',
-                'permissions' => [
-                    'dashboard.view',
-                    'attendance.view', 'attendance.create',
+                    'wash.member.view',
+                    'wash.loyalty.view',
+                    'wash.reward.view',
+                    'inventory.view',
+                    'inventory.create',
+                    'inventory.edit',
+                    'inventory.manage',
+                    'inventory.pickup',
+                    'attendance.view',
+                    'attendance.create',
                     'schedule.view',
-                    'leave.view', 'leave.create', 'leave.edit',
-                    'wash.view',
-                    'profile.view', 'profile.update',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'profile.view',
+                    'profile.update',
                     'notification.view',
                 ],
             ],
-            Role::STAFF_GUDANG => [
-                'label' => 'Staff Gudang',
+
+            'atk-cashier' => [
+                'label' => 'Kasir POS ATK',
                 'permissions' => [
                     'dashboard.view',
-                    'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.delete', 'inventory.manage', 'inventory.pickup', 'inventory.stock_in', 'inventory.stock_out', 'inventory.report',
-                    'profile.view', 'profile.update',
+                    'atk.view',
+                    'atk.pos',
+                    'atk.report',
+                    'atk.cash-register.manage',
+                    'inventory.view',
+                    'inventory.create',
+                    'inventory.edit',
+                    'inventory.manage',
+                    'inventory.pickup',
+                    'attendance.view',
+                    'attendance.create',
+                    'schedule.view',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'profile.view',
+                    'profile.update',
                     'notification.view',
+                ],
+            ],
+
+            'wash-operator' => [
+                'label' => 'Operator Wash / Tukang Cuci',
+                'permissions' => [
+                    'dashboard.view',
+                    'wash.view',
+                    'attendance.view',
+                    'attendance.create',
+                    'schedule.view',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                ],
+            ],
+
+            'noc-operator' => [
+                'label' => 'NOC / Network Monitoring',
+                'permissions' => [
+                    'dashboard.view',
+                    'customer.view',
+                    'map.view',
+                    'olt.view',
+                    'router.view',
+                    'odc.view',
+                    'odp.view',
+                    'closure.view',
+                    'htb.view',
+                    'network-monitor.view',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'ticket.complete',
+                    'attendance.view',
+                    'attendance.create',
+                    'schedule.view',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                ],
+            ],
+
+            'field-leader' => [
+                'label' => 'Leader Jaringan',
+                'permissions' => [
+                    'dashboard.view',
+                    'customer.view',
+                    'customer.create',
+                    'customer.edit',
+                    'map.view',
+                    'odc.view',
+                    'odp.view',
+                    'closure.view',
+                    'htb.view',
+                    'installation.view',
+                    'installation.create',
+                    'installation.edit',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'ticket.complete',
+                    'attendance.view',
+                    'attendance.create',
+                    'attendance.edit',
+                    'schedule.view',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'technician.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                ],
+            ],
+
+            'field-technician' => [
+                'label' => 'Teknisi Lapangan',
+                'permissions' => [
+                    'dashboard.view',
+                    'customer.view',
+                    'map.view',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'ticket.complete',
+                    'installation.view',
+                    'installation.edit',
+                    'attendance.view',
+                    'attendance.create',
+                    'schedule.view',
+                    'leave.view',
+                    'leave.create',
+                    'leave.edit',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                ],
+            ],
+
+            'partner' => [
+                'label' => 'Mitra / Reseller',
+                'permissions' => [
+                    'dashboard.view',
+                    'customer.view',
+                    'customer.create',
+                    'customer.edit',
+                    'ticket.view',
+                    'ticket.create',
+                    'ticket.edit',
+                    'ticket.complete',
+                    'package.view',
+                    'map.view',
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                ],
+            ],
+
+            'customer' => [
+                'label' => 'Pelanggan',
+                'permissions' => [
+                    'profile.view',
+                    'profile.update',
+                    'notification.view',
+                    'ticket.create',
                 ],
             ],
         ];
@@ -218,7 +280,10 @@ class DefaultRolePermissions
 
     public static function primaryDefinitions(): array
     {
-        return array_filter(self::definitions(), static fn (array $definition): bool => ! isset($definition['inherits']));
+        return array_filter(
+            self::definitions(),
+            static fn (array $definition): bool => ! isset($definition['inherits'])
+        );
     }
 
     public static function resolve(string $roleName): array
@@ -227,7 +292,24 @@ class DefaultRolePermissions
         $definition = $definitions[$roleName] ?? ['label' => ucfirst($roleName), 'permissions' => []];
 
         if (isset($definition['inherits'])) {
-            return self::resolve($definition['inherits']);
+            $parent = self::resolve((string) $definition['inherits']);
+            $parentPerms = $parent['permissions'] ?? [];
+            $extra = $definition['extra_permissions'] ?? [];
+            $exclude = $definition['exclude_permissions'] ?? [];
+
+            if (! is_array($parentPerms)) {
+                $parentPerms = [];
+            }
+
+            $merged = array_unique(array_merge($parentPerms, (array) $extra));
+            if ($exclude) {
+                $merged = array_values(array_diff($merged, (array) $exclude));
+            }
+
+            return [
+                'label' => $definition['label'] ?? ($parent['label'] ?? ucfirst($roleName)),
+                'permissions' => array_values($merged),
+            ];
         }
 
         return $definition;
@@ -237,7 +319,7 @@ class DefaultRolePermissions
     {
         $definition = self::resolve($roleName);
 
-        return $definition['permissions'] ?? [];
+        return (array) ($definition['permissions'] ?? []);
     }
 
     public static function grantsAll(string $roleName): bool
@@ -262,10 +344,49 @@ class DefaultRolePermissions
                 continue;
             }
 
-            $ids = $allowedByName->only(self::permissionNames($roleName))->values()->toArray();
-            $templates[$label] = array_values(array_intersect($ids, $allowedIds));
+            $permissionNames = self::permissionNames($roleName);
+            $ids = [];
+            foreach ($permissionNames as $permName) {
+                if (str_contains($permName, '.*') || str_ends_with($permName, '*')) {
+                    $prefix = rtrim($permName, '*');
+                    foreach ($allowedByName as $name => $id) {
+                        if (str_starts_with((string) $name, $prefix)) {
+                            $ids[] = $id;
+                        }
+                    }
+                } else {
+                    if (isset($allowedByName[$permName])) {
+                        $ids[] = $allowedByName[$permName];
+                    }
+                }
+            }
+
+            $ids = array_values(array_unique(array_intersect($ids, $allowedIds)));
+            $templates[$label] = $ids;
         }
 
         return $templates;
+    }
+
+    public static function expandPermissionNames(array $rawPermissionNames, Collection $allPermissions): array
+    {
+        $flatNames = $allPermissions->pluck('name')->all();
+        $expanded = [];
+        foreach ($rawPermissionNames as $perm) {
+            if (! is_string($perm)) {
+                continue;
+            }
+            if (str_contains($perm, '.*') || str_ends_with($perm, '*')) {
+                $prefix = rtrim($perm, '.*');
+                foreach ($flatNames as $dbName) {
+                    if (str_starts_with((string) $dbName, $prefix)) {
+                        $expanded[] = (string) $dbName;
+                    }
+                }
+            } else {
+                $expanded[] = $perm;
+            }
+        }
+        return array_values(array_unique($expanded));
     }
 }

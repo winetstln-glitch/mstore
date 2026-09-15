@@ -58,7 +58,7 @@ class TechnicianController extends Controller implements HasMiddleware
             return back()->withErrors(['name' => __('User with similar information already exists: :name (:email)', ['name' => $existing->name, 'email' => $existing->email])])->withInput();
         }
 
-        $role = Role::where('name', 'technician')->firstOrFail();
+        $role = Role::where('name', 'field-technician')->firstOrFail();
 
         $user = User::create([
             'name' => $request->name,

@@ -8,24 +8,33 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
-    public const ADMIN = 'admin';
-    public const DIREKTUR = 'direktur';
-    public const LEADER = 'leader';
-    public const NOC = 'noc';
-    public const NOC_LEGACY = 'network-operations-center';
-    public const TECHNICIAN = 'technician';
-    public const COORDINATOR = 'coordinator';
-    public const FINANCE = 'finance';
-    public const HRD_MANAGER = 'hrd-manager';
-    public const CUSTOMER_SERVICE = 'customer-service';
-    public const CUSTOMER = 'customer';
-    public const RESELLER = 'reseller';
-    public const KASIR_ATK = 'kasir-atk';
-    public const KASIR_WASH = 'kasir-wash';
-    public const KARYAWAN_WASH = 'karyawan-wash';
-    public const STAFF_GUDANG = 'staff-gudang';
 
-    protected $fillable = ['name', 'label'];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    protected $fillable = ['name', 'label', 'is_system'];
+
+    protected $casts = [
+        'is_system' => 'boolean',
+    ];
 
     public function users(): HasMany
     {
@@ -40,5 +49,28 @@ class Role extends Model
     public function hasPermission($permissionName): bool
     {
         return $this->permissions->contains('name', $permissionName);
+    }
+
+    public static function allSystemRoleNames(): array
+    {
+        return array_keys((array) config('roles.definitions', []));
+    }
+
+    public static function allSystemRoleLabels(): array
+    {
+        return array_map(
+            static fn (array $def): string => $def['label'] ?? '',
+            (array) config('roles.definitions', [])
+        );
+    }
+
+    public static function hiddenInUserManagement(): array
+    {
+        return (array) config('roles.hidden_in_user_management', ['customer']);
+    }
+
+    public static function superAdminRoleNames(): array
+    {
+        return (array) config('roles.super_admin_role_names', ['super-admin']);
     }
 }

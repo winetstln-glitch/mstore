@@ -245,7 +245,7 @@ class LoginController extends Controller
             return route('client.onu-wifi.show');
         }
 
-        if ($user->hasRole('karyawan-wash') || $user->hasRole('kasir-wash')) {
+        if ($user->hasRole('wash-cashier') || $user->hasRole('wash-cashier')) {
             return route('attendance.create');
         }
 

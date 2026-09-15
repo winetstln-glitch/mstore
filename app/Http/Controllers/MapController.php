@@ -59,7 +59,7 @@ class MapController extends Controller implements HasMiddleware
     public function index()
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $isAdmin = $user->hasRole('finance') || $user->hasRole('finance');
         $canManageMap = $user->can('map.manage');
         $canEditCustomer = $user->can('customer.edit');
 
@@ -241,7 +241,7 @@ class MapController extends Controller implements HasMiddleware
     public function onlinePaths(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $isAdmin = $user->hasRole('finance') || $user->hasRole('finance');
         $regionId = null;
 
         if (! $isAdmin) {

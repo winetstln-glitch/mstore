@@ -261,7 +261,7 @@ class DeduplicateEmployeesCommand extends Command
         if ($user->role?->name === 'admin') {
             $score += 1000;
         }
-        if (in_array($user->role?->name, ['karyawan-wash', 'technician', 'noc'])) {
+        if (in_array($user->role?->name, ['wash-operator', 'technician', 'noc-operator'])) {
             $score += 500;
         }
         if ($user->email) {

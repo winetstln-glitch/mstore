@@ -98,7 +98,7 @@ class AttendanceReportController extends Controller
     private function getEligibleUsers()
     {
         $query = \App\Models\User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
         })->where('is_active', true)
           ->with('role');
 
@@ -116,6 +116,6 @@ class AttendanceReportController extends Controller
             return false;
         }
         
-        return $user->hasAnyRole(['admin', 'finance', 'direktur', Role::HRD_MANAGER, 'owner', 'owner pendiri', 'leader']);
+        return $user->hasAnyRole(['super-admin', 'manager', 'finance']);
     }
 }

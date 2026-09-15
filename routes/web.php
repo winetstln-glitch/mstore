@@ -403,9 +403,9 @@ Route::middleware('auth')->group(function () {
         ->name('sla.escalation-queue');
 
     Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/noc', [\App\Http\Controllers\ReportingCenterController::class, 'noc'])
+        Route::get('/noc', [\App\Http\Controllers\ReportingCenterController::class, 'noc-operator'])
             ->middleware('permission:report.noc.export')
-            ->name('noc');
+            ->name('noc-operator');
         Route::get('/noc/pdf', [\App\Http\Controllers\ReportingCenterController::class, 'nocPdf'])
             ->middleware('permission:report.noc.export')
             ->name('noc.pdf');
@@ -655,7 +655,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
     Route::post('routers/{router}/simple-queues/toggle', [RouterController::class, 'toggleSimpleQueue'])->name('routers.simple-queues.toggle');
     Route::post('routers/{router}/simple-queues/move', [RouterController::class, 'moveSimpleQueue'])->name('routers.simple-queues.move');
     Route::get('hotspot/online', [RouterController::class, 'sessions'])->name('hotspot.online');
-    Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index');
+    Route::get('hotspot', [HotspotController::class, 'index'])->name('hotspot.index')->middleware('permission:hotspot.view');
 
     // Hotspot Profiles (Voucher & Rumahan packages)
     Route::prefix('hotspot')->name('hotspot.')->group(function () {
@@ -1219,7 +1219,7 @@ Route::get('/webhooks/payment/return', [\App\Http\Controllers\PaymentController:
         Route::resource('transactions', \App\Http\Controllers\AtkTransactionController::class)->only(['index', 'show', 'destroy']);
         
         // Cash Register Routes
-        Route::get('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'index'])->name('cash-registers.index');
+        Route::get('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'index'])->name('cash-registers.index')->middleware('permission:atk.manage');
         Route::get('/cash-registers/create', [\App\Http\Controllers\AtkCashRegisterController::class, 'create'])->name('cash-registers.create');
         Route::post('/cash-registers', [\App\Http\Controllers\AtkCashRegisterController::class, 'store'])->name('cash-registers.store');
         Route::get('/cash-registers/{register}/edit', [\App\Http\Controllers\AtkCashRegisterController::class, 'edit'])->name('cash-registers.edit');

@@ -29,9 +29,12 @@ class OdcController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Odc::with(['olt', 'region']);
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        if ($request->filled('region_id')) {
+        $query = Odc::with(['olt', 'region'])->forUserArea($user);
+
+        if ($request->filled('region_id') && $isSuperAdmin) {
             $query->where('region_id', $request->region_id);
         }
 
@@ -43,21 +46,27 @@ class OdcController extends Controller implements HasMiddleware
             });
         }
 
-        $odcs = $query->latest()->paginate(10);
-        $regions = Region::orderBy('name')->get();
+        $odcs = $query->latest()->paginate(10)->withQueryString();
+        $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 
-        return view('odcs.index', compact('odcs', 'regions'));
+        return view('odcs.index', compact('odcs', 'regions', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $olts = OLT::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $olts = OLT::query()->forUserArea($user)->orderBy('name')->get();
         $regions = Region::orderBy('name')->get();
 
-        return view('odcs.create', compact('olts', 'regions'));
+        return view('odcs.create', compact('olts', 'regions', 'isSuperAdmin'))
+            ->with('defaultRegionId', $user->coordinator?->region_id);
     }
 
     /**
@@ -109,12 +118,15 @@ class OdcController extends Controller implements HasMiddleware
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Odc $odc)
+    public function edit(Request $request, Odc $odc)
     {
-        $olts = OLT::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $olts = OLT::query()->forUserArea($user)->orderBy('name')->get();
         $regions = Region::orderBy('name')->get();
 
-        return view('odcs.edit', compact('odc', 'olts', 'regions'));
+        return view('odcs.edit', compact('odc', 'olts', 'regions', 'isSuperAdmin'));
     }
 
     /**
@@ -167,9 +179,11 @@ class OdcController extends Controller implements HasMiddleware
         return redirect()->route('odcs.index')->with('success', __('ODC deleted successfully.'));
     }
 
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
-        return response()->streamDownload(function () {
+        $user = $request->user();
+
+        return response()->streamDownload(function () use ($user) {
             if (ob_get_length()) {
                 ob_end_clean();
             }
@@ -191,7 +205,7 @@ class OdcController extends Controller implements HasMiddleware
                 'Description',
             ]));
 
-            Odc::with(['olt', 'region'])->latest()->chunk(200, function ($odcs) use ($writer) {
+            Odc::with(['olt', 'region'])->forUserArea($user)->latest()->chunk(200, function ($odcs) use ($writer) {
                 foreach ($odcs as $odc) {
                     $writer->addRow(Row::fromValues([
                         $odc->name,

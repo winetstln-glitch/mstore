@@ -7,7 +7,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h1 class="h3 mb-0 text-body">{{ __('Dasbor Keuangan') }}</h1>
         <div class="row g-2 row-cols-2 row-cols-md-auto justify-content-md-end w-100 w-md-auto">
-            @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+            @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
             <!-- PERBAIKAN: Ganti label menjadi sesuai konteks agar tidak menyesatkan auditor -->
             <div class="col">
                 <a href="{{ route('finance.manager_report') }}" class="btn btn-secondary w-100 h-100 d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" title="{{ __('Laporan Manajemen') }}">
@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+    @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
         <!-- SUMMARY CARDS: CASH POSITION (Posisi Kas) -->
         <div class="row">
             <!-- Total Income (Gross) -->
@@ -411,7 +411,7 @@
         @endif
     @endif
 
-    @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('finance'))
+    @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between gap-3">

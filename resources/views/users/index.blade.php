@@ -58,10 +58,9 @@
                     <table class="table table-hover align-middle mb-0 table-responsive-mobile">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Nama') }}</th>
+                                <th class="ps-3 text-uppercase small text-muted border-0">{{ __('Nama / Jabatan') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Email') }}</th>
-                                <th class="text-uppercase small text-muted border-0">{{ __('Nomor HP') }}</th>
-                                <th class="text-uppercase small text-muted border-0">{{ __('Peran') }}</th>
+                                <th class="text-uppercase small text-muted border-0">{{ __('Peran + Scope') }}</th>
                                 <th class="text-uppercase small text-muted border-0">{{ __('Status') }}</th>
                                 <th class="text-end pe-3 text-uppercase small text-muted border-0">{{ __('Aksi') }}</th>
                             </tr>
@@ -70,25 +69,68 @@
                             @foreach($users as $user)
                             <tr>
                                 <td class="ps-3 fw-medium">
-                                    {{ $user->name }}
-                                    <div class="small text-muted">{{ $user->attendance_card_code ?: $user->username }}</div>
+                                    <div>{{ $user->name }}</div>
+                                    @if(trim((string) $user->job_title) !== '')
+                                        <div class="small text-primary fw-normal mb-1">
+                                            <i class="fa-solid fa-briefcase me-1"></i>{{ $user->job_title }}
+                                        </div>
+                                    @endif
+                                    <div class="small text-muted">
+                                        <i class="fa-solid fa-id-badge me-1"></i>{{ $user->attendance_card_code ?: $user->username }}
+                                        @if($user->phone)
+                                            <span class="mx-1">·</span>
+                                            <i class="fa-solid fa-phone me-1"></i>{{ $user->phone }}
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
-                                    {{ $user->email }}
-                                </td>
-                                <td>
-                                    {{ $user->phone ?: '-' }}
+                                    {{ $user->email ?: '-' }}
                                 </td>
                                 <td>
                                     @if($user->role)
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle">
-                                            {{ $user->role->label }}
-                                        </span>
+                                        <div class="mb-1">
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                <i class="fa-solid fa-key me-1"></i>{{ $user->role->label }}
+                                            </span>
+                                        </div>
                                     @else
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle mb-1 d-inline-block">
                                             {{ __('Tanpa Peran') }}
                                         </span>
                                     @endif
+                                    @php
+                                        $buList = $user->bu;
+                                        $buLevel = $user->bu_level;
+                                        $dept = $user->department;
+                                        $fieldLevel = $user->field_level;
+                                    @endphp
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if(!empty($buList))
+                                            @foreach($buList as $buCode)
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small">
+                                                    <i class="fa-solid fa-store me-1"></i>{{ $buCode }}
+                                                </span>
+                                            @endforeach
+                                        @endif
+                                        @if(!empty($buLevel))
+                                            <span class="badge bg-orange-subtle text-orange-emphasis border border-orange-subtle small" style="background:#fff3e0;color:#e65100;border-color:#ffe0b2;">
+                                                Lv. {{ $buLevel }}
+                                            </span>
+                                        @endif
+                                        @if(!empty($dept))
+                                            <span class="badge bg-purple-subtle text-purple-emphasis border border-purple-subtle small" style="background:#f3e5f5;color:#4a148c;border-color:#e1bee7;">
+                                                <i class="fa-solid fa-building me-1"></i>{{ $dept }}
+                                            </span>
+                                        @endif
+                                        @if(!empty($fieldLevel))
+                                            <span class="badge bg-teal-subtle text-teal-emphasis border border-teal-subtle small" style="background:#e0f2f1;color:#004d40;border-color:#b2dfdb;">
+                                                <i class="fa-solid fa-hard-hat me-1"></i>{{ $fieldLevel }}
+                                            </span>
+                                        @endif
+                                        @if(empty($buList) && empty($buLevel) && empty($dept) && empty($fieldLevel))
+                                            <span class="small text-muted">—</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     @if($user->is_active)
@@ -120,7 +162,7 @@
                                             <i class="fa-brands fa-whatsapp"></i>
                                         </button>
                                         
-                                        @if(auth()->user()?->hasRole('admin') && $user->id !== auth()->id())
+                                        @if(auth()->user()?->isSuperAdmin() && $user->id !== auth()->id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Yakin ingin menghapus pengguna ini?') }}');">
                                                 @csrf
                                                 @method('DELETE')

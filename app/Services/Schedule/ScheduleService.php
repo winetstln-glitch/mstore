@@ -41,7 +41,7 @@ class ScheduleService
     public function getScheduleUsersQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $query = User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'field-leader']);
         })->where('is_active', true);
 
         return $query;
@@ -50,7 +50,7 @@ class ScheduleService
     public function resolveUserGroup(User $user): string
     {
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+        if (in_array($roleName, ['wash-cashier', 'wash-operator'], true)) {
             return 'wash';
         }
         static $washEmployeesCache = null;
@@ -116,6 +116,6 @@ class ScheduleService
 
     public function getAllRoles(): Collection
     {
-        return Role::whereNotIn('name', [Role::CUSTOMER, Role::COORDINATOR])->orderBy('name')->get();
+        return Role::whereNotIn('name', ['customer', 'field-leader'])->orderBy('name')->get();
     }
 }

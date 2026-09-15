@@ -1,7 +1,7 @@
 {{-- ============================================ 
      MODALS 
      ============================================ --}}
-@php $canManage = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage'); @endphp
+@php $canManage = Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasPermission('schedule.manage'); @endphp
 
 @if($canManage)
     {{-- Import Schedule Modal --}}

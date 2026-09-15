@@ -21,7 +21,7 @@ class ConsolidatedDashboardController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('finance');
+        $isAdmin = $user->hasRole('finance') || $user->hasRole('finance');
 
         $filters = $request->only([
             'business_unit_id', 'branch_id', 'profit_center_id', 'cost_center_id',

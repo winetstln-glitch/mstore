@@ -34,17 +34,17 @@ class MarkAbsentAsAlpha extends Command
         $today = Carbon::today();
         $markedCount = 0;
         $eligibleRoles = [
-            Role::ADMIN,
-            Role::LEADER,
-            Role::FINANCE,
-            Role::HRD_MANAGER,
-            Role::NOC,
-            Role::TECHNICIAN,
-            Role::KASIR_ATK,
-            Role::KASIR_WASH,
-            Role::KARYAWAN_WASH,
+            'admin',
+            'leader',
+            'finance',
+            'hrd-manager',
+            'noc-operator',
+            'technician',
+            'atk-cashier',
+            'wash-cashier',
+            'wash-operator',
         ];
-        $excludedRoles = [Role::CUSTOMER, Role::DIREKTUR, Role::COORDINATOR, 'owner', 'owner pendiri', 'owner-pendiri'];
+        $excludedRoles = ['customer', 'direktur', 'field-leader', 'owner', 'owner pendiri', 'owner-pendiri'];
 
         // Query semua user aktif beserta role
         User::where('is_active', true)

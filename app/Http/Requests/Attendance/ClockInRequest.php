@@ -59,7 +59,7 @@ class ClockInRequest extends FormRequest
     private function resolveUserGroup($user): string
     {
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+        if (in_array($roleName, ['wash-cashier', 'wash-operator'], true)) {
             return 'wash';
         }
         if (\Schema::hasTable('wash_employees') && \App\Models\WashEmployee::where('user_id', $user->id)->exists()) {

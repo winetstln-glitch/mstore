@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ONT extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, ScopesByUserArea;
 
     protected $table = 'onus';
 

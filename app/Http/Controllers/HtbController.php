@@ -25,30 +25,40 @@ class HtbController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $query = Htb::with(['odp', 'parent']);
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $query = Htb::with(['odp', 'parent'])->forUserArea($user);
 
         if ($request->has('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhereHas('odp', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('odp', function ($subQ) use ($search) {
+                        $subQ->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
-        $htbs = $query->latest()->paginate(10);
+        $htbs = $query->latest()->paginate(10)->withQueryString();
 
-        return view('htbs.index', compact('htbs'));
+        return view('htbs.index', compact('htbs', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $odps = Odp::all();
-        $parentHtbs = Htb::with('odp')->get();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('htbs.create', compact('odps', 'parentHtbs'));
+        $odps = Odp::query()->forUserArea($user)->orderBy('name')->get();
+        $parentHtbs = Htb::with('odp')->forUserArea($user)->get();
+
+        return view('htbs.create', compact('odps', 'parentHtbs', 'isSuperAdmin'));
     }
 
     /**
@@ -137,14 +147,15 @@ class HtbController extends Controller implements HasMiddleware
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Htb $htb)
+    public function edit(Request $request, Htb $htb)
     {
-        $odps = Odp::all();
-        // Prevent selecting self or children as parent to avoid cycles
-        // A simple check is to exclude self. Deep cycle check is harder but simple exclude is often enough for UI.
-        $parentHtbs = Htb::with('odp')->where('id', '!=', $htb->id)->get();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('htbs.edit', compact('htb', 'odps', 'parentHtbs'));
+        $odps = Odp::query()->forUserArea($user)->orderBy('name')->get();
+        $parentHtbs = Htb::with('odp')->forUserArea($user)->where('id', '!=', $htb->id)->get();
+
+        return view('htbs.edit', compact('htb', 'odps', 'parentHtbs', 'isSuperAdmin'));
     }
 
     /**

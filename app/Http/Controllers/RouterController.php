@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
+use App\Models\Region;
 use App\Models\Router;
-use Modules\Network\Services\MonitoringService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Modules\Network\Services\MonitoringService;
 
 class RouterController extends Controller implements HasMiddleware
 {
@@ -66,18 +68,35 @@ class RouterController extends Controller implements HasMiddleware
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        // If user is not admin and is a coordinator with an assigned router, redirect to details directly
-        if (! $user->hasRole('admin') && $user->coordinator && $user->coordinator->router_id) {
+        if (! $isSuperAdmin && $user->coordinator && $user->coordinator->router_id) {
             return redirect()->route('routers.sessions', $user->coordinator->router_id);
         }
 
-        $routers = Router::latest()->paginate(10);
+        $query = Router::query()->forUserArea($user);
 
-        return view('routers.index', compact('routers'));
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('host', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        $stats = [
+            'total_routers'  => (clone $query)->count(),
+            'active_routers' => (clone $query)->where('is_active', true)->count(),
+        ];
+
+        $routers = $query->latest()->paginate(10)->withQueryString();
+
+        return view('routers.index', compact('routers', 'stats', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
     /**
@@ -85,7 +104,15 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        return view('routers.create');
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $regions = Region::orderBy('name')->get();
+        $companies = $isSuperAdmin ? Company::orderBy('name')->get() : null;
+
+        return view('routers.create', compact('regions', 'companies', 'isSuperAdmin'))
+            ->with('defaultCompanyId', $user->company_id)
+            ->with('defaultRegionId', $user->coordinator?->region_id);
     }
 
     /**
@@ -93,7 +120,12 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
         $validated = $request->validate([
+            'region_id' => $isSuperAdmin ? 'nullable|exists:regions,id' : 'nullable',
+            'company_id' => $isSuperAdmin ? 'nullable|exists:companies,id' : 'nullable',
             'name' => 'required|string|max:255',
             'host' => 'required|string|max:255',
             'port' => 'required|integer',
@@ -105,6 +137,9 @@ class RouterController extends Controller implements HasMiddleware
             'is_active' => 'boolean',
             'description' => 'nullable|string',
         ]);
+
+        $validated['company_id'] = $isSuperAdmin ? ($validated['company_id'] ?? $user->company_id) : $user->company_id;
+        $validated['region_id'] = $isSuperAdmin ? ($validated['region_id'] ?? $user->coordinator?->region_id) : $user->coordinator?->region_id;
 
         $router = Router::create($validated);
 
@@ -347,7 +382,16 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function edit(Router $router)
     {
-        return view('routers.edit', compact('router'));
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $regions = Region::orderBy('name')->get();
+        $companies = $isSuperAdmin ? Company::orderBy('name')->get() : null;
+
+        return view('routers.edit', compact('router', 'regions', 'companies', 'isSuperAdmin'))
+            ->with('defaultCompanyId', $user->company_id)
+            ->with('defaultRegionId', $user->coordinator?->region_id)
+            ->with('scopeCompany', $user?->company);
     }
 
     /**
@@ -355,7 +399,12 @@ class RouterController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Router $router)
     {
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
         $validated = $request->validate([
+            'region_id' => $isSuperAdmin ? 'nullable|exists:regions,id' : 'nullable',
+            'company_id' => $isSuperAdmin ? 'nullable|exists:companies,id' : 'nullable',
             'name' => 'required|string|max:255',
             'host' => 'required|string|max:255',
             'port' => 'required|integer',
@@ -363,10 +412,14 @@ class RouterController extends Controller implements HasMiddleware
             'location' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'password' => 'nullable|string|max:255', // Optional on update
+            'password' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'description' => 'nullable|string',
         ]);
+
+        if (! $isSuperAdmin) {
+            unset($validated['company_id'], $validated['region_id']);
+        }
 
         if (empty($validated['password'])) {
             unset($validated['password']);

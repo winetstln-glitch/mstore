@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $adminRole = Role::where('name', 'admin')->first();
-        $nocRole = Role::where('name', 'noc')->first();
+        $nocRole = Role::where('name', 'noc-operator')->first();
         $techRole = Role::where('name', 'technician')->first();
         $defaultCompanyId = Company::where('is_active', true)->orderBy('id')->value('id');
 
@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             ['email' => 'noc@mstore.local'],
             [
                 'name' => 'NOC Officer',
-                'username' => 'noc',
+                'username' => 'noc-operator',
                 'password' => Hash::make('password'),
                 'role_id' => $nocRole->id,
                 'company_id' => $defaultCompanyId,

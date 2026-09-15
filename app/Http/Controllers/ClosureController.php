@@ -24,35 +24,46 @@ class ClosureController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Closure::with(['odc', 'region']);
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $query = Closure::with(['odc', 'region'])->forUserArea($user);
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         if ($request->has('odc_id') && $request->odc_id != '') {
             $query->where('odc_id', $request->odc_id);
         }
 
-        if ($request->has('region_id') && $request->region_id != '') {
+        if ($request->has('region_id') && $request->region_id != '' && $isSuperAdmin) {
             $query->where('region_id', $request->region_id);
         }
 
-        $closures = $query->latest()->paginate(10);
-        $odcs = Odc::all(); // For filter
-        $regions = Region::all(); // For filter
+        $closures = $query->latest()->paginate(10)->withQueryString();
+        $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
+        $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 
-        return view('closures.index', compact('closures', 'odcs', 'regions'));
+        return view('closures.index', compact('closures', 'odcs', 'regions', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $odcs = Odc::all();
-        $regions = Region::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('closures.create', compact('odcs', 'regions'));
+        $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
+        $regions = Region::orderBy('name')->get();
+
+        return view('closures.create', compact('odcs', 'regions', 'isSuperAdmin'))
+            ->with('defaultRegionId', $user->coordinator?->region_id);
     }
 
     public function store(Request $request)
@@ -95,12 +106,15 @@ class ClosureController extends Controller implements HasMiddleware
         return view('closures.show', compact('closure'));
     }
 
-    public function edit(Closure $closure)
+    public function edit(Request $request, Closure $closure)
     {
-        $odcs = Odc::all();
-        $regions = Region::all();
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
 
-        return view('closures.edit', compact('closure', 'odcs', 'regions'));
+        $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
+        $regions = Region::orderBy('name')->get();
+
+        return view('closures.edit', compact('closure', 'odcs', 'regions', 'isSuperAdmin'));
     }
 
     public function update(Request $request, Closure $closure)

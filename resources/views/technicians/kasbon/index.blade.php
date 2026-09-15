@@ -48,7 +48,7 @@
                     {{ __('Kelola kasbon dan pinjaman teknisi dengan mudah') }}
                 </p>
             </div>
-            @if(Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', 'hrd-manager', 'hrd manager', 'hrd', 'manager hrd', 'direktur', 'owner', 'owner pendiri']))
+            @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#addBonusModal">
                         <i class="fas fa-plus me-1"></i>
@@ -264,7 +264,7 @@
                                     <x-kasbon.status-badge :status="$adjustment->status" />
                                 </td>
                                 <td class="text-end pe-3">
-                                    @if(Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', 'hrd-manager', 'hrd manager', 'hrd', 'manager hrd', 'direktur', 'owner', 'owner pendiri']))
+                                    @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                                         @if($adjustment->status !== 'processed')
                                             <div class="d-inline-flex gap-1">
                                                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editKasbonModal-{{ $adjustment->id }}">
@@ -354,7 +354,7 @@
                                     <x-kasbon.status-badge :status="$bonus->status" />
                                 </td>
                                 <td class="text-end pe-3">
-                                    @if(Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', 'hrd-manager', 'hrd manager', 'hrd', 'manager hrd', 'direktur', 'owner', 'owner pendiri']))
+                                    @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                                         @if($bonus->status !== 'processed')
                                             <div class="d-inline-flex gap-1">
                                                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editBonusModal-{{ $bonus->id }}">
@@ -426,7 +426,7 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <x-kasbon.status-badge :status="$loan->status" text="{{ $loan->status === 'active' ? 'Aktif' : 'Selesai' }}" />
-                            @if(Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', 'hrd-manager', 'hrd manager', 'hrd', 'manager hrd', 'direktur', 'owner', 'owner pendiri']))
+                            @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                                 <div class="d-inline-flex gap-1">
                                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editKasbonLoanModal-{{ $loan->id }}">
                                         <i class="fas fa-edit"></i>
@@ -522,7 +522,7 @@
                                                 Rp {{ number_format($installment->amount, 0, ',', '.') }}
                                             </div>
                                         </div>
-                                        @if(Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', 'hrd-manager', 'hrd manager', 'hrd', 'manager hrd', 'direktur', 'owner', 'owner pendiri']))
+                                        @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                                             <div class="d-flex justify-content-end mt-1">
                                                 <form action="{{ route('kasbon-loans.installments.destroy', [$loan, $installment]) }}" method="POST" data-no-loading="true">
                                                     @csrf

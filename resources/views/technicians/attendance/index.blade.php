@@ -151,7 +151,7 @@
                         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
                             @php
                                 $user = Auth::user();
-                                $isAdmin = $user->hasAnyRole(['admin', 'direktur', App\Models\Role::HRD_MANAGER, 'owner', 'owner pendiri']);
+                                $isAdmin = $user->hasAnyRole(['super-admin', 'manager', 'finance']);
                             @endphp
                             @if($isAdmin)
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#manualAttendanceModal">

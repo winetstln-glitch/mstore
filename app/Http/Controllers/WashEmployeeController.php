@@ -122,7 +122,7 @@ class WashEmployeeController extends Controller
             if ($existingUser) {
                 // If existing user doesn't have a role or is just a customer, upgrade to karyawan-wash
                 $roleId = Role::query()
-                    ->whereIn('name', ['karyawan-wash', 'kasir-wash', 'employee'])
+                    ->whereIn('name', ['wash-operator', 'wash-cashier', 'employee'])
                     ->value('id');
 
                 if (! $existingUser->role_id || $existingUser->role?->name === 'customer') {
@@ -133,7 +133,7 @@ class WashEmployeeController extends Controller
             }
 
             $roleId = Role::query()
-                ->whereIn('name', ['karyawan-wash', 'kasir-wash', 'employee'])
+                ->whereIn('name', ['wash-operator', 'wash-cashier', 'employee'])
                 ->value('id');
 
             $user = User::create([

@@ -24,7 +24,7 @@ class AdminDashboardController extends Controller
         $today = Carbon::today();
 
         $totalEmployees = User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['customer']);
+            $q->whereNotIn('name', ['customer', 'partner']);
         })->where('is_active', true)->count();
 
         $todayAttendances = TechnicianAttendance::whereDate('clock_in', $today->toDateString())
@@ -57,7 +57,7 @@ class AdminDashboardController extends Controller
             ->paginate(20);
 
         $users = User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', ['customer']);
+            $q->whereNotIn('name', ['customer', 'partner']);
         })->orderBy('name')->get();
 
         return view('admin.audit-trail', compact('logs', 'users'));

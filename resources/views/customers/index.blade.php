@@ -22,7 +22,7 @@
             @endcan
             
             @can('customer.view')
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                 <a href="{{ route('customers.export', request()->only(['search', 'status'])) }}" class="btn btn-outline-secondary" title="{{ __('Ekspor Pelanggan') }}">
                     <i class="fa-solid fa-file-export me-1"></i> <span class="d-none d-sm-inline">{{ __('Ekspor') }}</span>
                 </a>
@@ -30,7 +30,7 @@
             @endcan
             
             @can('customer.create')
-            @if(Auth::user()->hasRole('admin'))
+            @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                 <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importCustomersModal" title="{{ __('Impor Pelanggan') }}">
                     <i class="fa-solid fa-file-import me-1"></i> <span class="d-none d-sm-inline">{{ __('Impor') }}</span>
                 </button>
@@ -257,7 +257,7 @@
 </div>
 
 @can('customer.create')
-@if(Auth::user()->hasRole('admin'))
+@if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
 <div class="modal fade" id="importCustomersModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
     <div class="modal-content">

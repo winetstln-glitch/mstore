@@ -25,10 +25,10 @@ class LoginUsernameOnlyTest extends TestCase
         $cases = [
             ['role' => 'admin', 'redirect' => route('dashboard')],
             ['role' => 'technician', 'redirect' => route('dashboard')],
-            ['role' => 'noc', 'redirect' => route('dashboard')],
-            ['role' => 'kasir-atk', 'redirect' => route('dashboard')],
-            ['role' => 'kasir-wash', 'redirect' => route('attendance.create')],
-            ['role' => 'karyawan-wash', 'redirect' => route('attendance.create')],
+            ['role' => 'noc-operator', 'redirect' => route('dashboard')],
+            ['role' => 'atk-cashier', 'redirect' => route('dashboard')],
+            ['role' => 'wash-cashier', 'redirect' => route('attendance.create')],
+            ['role' => 'wash-operator', 'redirect' => route('attendance.create')],
             ['role' => 'staff', 'redirect' => route('dashboard')],
             ['role' => 'customer', 'redirect' => route('client.onu-wifi.show')],
         ];
@@ -88,7 +88,7 @@ class LoginUsernameOnlyTest extends TestCase
     public function test_user_lama_tanpa_username_bisa_login_menggunakan_email_penuh(): void
     {
         $role = Role::create([
-            'name' => 'noc',
+            'name' => 'noc-operator',
             'label' => 'NOC',
         ]);
 
@@ -114,7 +114,7 @@ class LoginUsernameOnlyTest extends TestCase
     public function test_user_lama_tanpa_username_tetap_bisa_login_dengan_localpart_email(): void
     {
         $role = Role::create([
-            'name' => 'noc',
+            'name' => 'noc-operator',
             'label' => 'NOC',
         ]);
 

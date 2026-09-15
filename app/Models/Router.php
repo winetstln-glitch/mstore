@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Router extends Model
 {
+    use ScopesByUserArea;
+
     protected $fillable = [
+        'region_id', 'company_id',
         'name',
         'host',
         'vpn_tunnel_ip',
@@ -41,5 +46,15 @@ class Router extends Model
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

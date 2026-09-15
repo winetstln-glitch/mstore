@@ -76,7 +76,7 @@ class TechnicianAttendance extends Model
         
         $group = 'teknisi';
         $roleName = strtolower((string) ($user->role?->name ?? ''));
-        if (in_array($roleName, ['kasir-wash', 'karyawan-wash'], true)) {
+        if (in_array($roleName, ['wash-cashier', 'wash-operator'], true)) {
             $group = 'wash';
         } else {
             static $washEmployeesCache = null;
@@ -91,7 +91,7 @@ class TechnicianAttendance extends Model
         }
 
         $status = null;
-        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'coordinator'], true);
+        $isExcludedFromSchedule = in_array($roleName, ['admin', 'leader', 'owner', 'owner-pendiri', 'direktur', 'field-leader'], true);
 
         if (! $isExcludedFromSchedule) {
             $daily = \App\Models\TechnicianDailySchedule::where('user_id', $user->id)

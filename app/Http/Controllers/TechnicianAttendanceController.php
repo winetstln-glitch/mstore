@@ -101,7 +101,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         $usersQuery = \App\Models\User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [\App\Models\Role::CUSTOMER, \App\Models\Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
         })->where('is_active', true)
             ->with('role')
             ->orderBy('name');
@@ -169,7 +169,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
 
         $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [\App\Models\Role::CUSTOMER, \App\Models\Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
         })->where('is_active', true)
             ->with('role');
 
@@ -197,7 +197,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
         }
 
         $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
-            $q->whereNotIn('name', [\App\Models\Role::CUSTOMER, \App\Models\Role::COORDINATOR]);
+            $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
         })->where('is_active', true)
             ->with('role');
 
@@ -244,7 +244,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             }
 
             $users = \App\Models\User::whereHas('role', function ($q) {
-                $q->whereNotIn('name', [\App\Models\Role::CUSTOMER, \App\Models\Role::COORDINATOR]);
+                $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
             })->where('is_active', true)
                 ->with('role')
                 ->orderBy('name')

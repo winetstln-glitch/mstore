@@ -29,23 +29,36 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $roles = Role::where('name', '!=', 'customer')
+        $hiddenNames = Role::hiddenInUserManagement();
+        $systemNames = Role::allSystemRoleNames();
+
+        $roles = Role::query()
             ->withCount('users')
             ->withCount('permissions')
+            ->whereNotIn('name', $hiddenNames)
             ->when(request('search'), function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('label', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('label', 'like', "%{$search}%");
+                });
             })
             ->when(request('sort'), function ($query) {
                 $sortColumn = request('sort', 'created_at');
                 $sortDirection = request('direction', 'desc');
-                $allowedColumns = ['name', 'label', 'created_at', 'users_count', 'permissions_count'];
-                
-                if (in_array($sortColumn, $allowedColumns)) {
-                    $query->orderBy($sortColumn, $sortDirection);
+                $allowedColumns = ['name', 'label', 'is_system', 'created_at', 'users_count', 'permissions_count'];
+
+                if (in_array($sortColumn, $allowedColumns, true)) {
+                    if ($sortColumn === 'is_system') {
+                        $query->orderByRaw('is_system desc, name asc');
+                    } else {
+                        $query->orderBy($sortColumn, $sortDirection);
+                    }
                 }
-            }, function ($query) {
-                $query->latest();
+            }, function ($query) use ($systemNames) {
+                $query->orderByRaw(
+                    'case when name in ('.implode(',', array_fill(0, count($systemNames), '?')).') then 0 else 1 end, name asc',
+                    $systemNames
+                );
             })
             ->paginate(10)
             ->appends(request()->query());
@@ -59,9 +72,12 @@ class RoleController extends Controller implements HasMiddleware
     private function getAllowedPermissions()
     {
         $user = auth()->user();
+        $superAdminRoles = (array) config('auth.super_admin_roles', []);
 
-        if ($user->hasRole('admin')) {
-            return Permission::all();
+        foreach ($superAdminRoles as $superRole) {
+            if ($user?->hasRole($superRole)) {
+                return Permission::all();
+            }
         }
 
         return $user->role?->permissions ?? collect();
@@ -131,6 +147,16 @@ class RoleController extends Controller implements HasMiddleware
         ]);
 
         $roleName = Str::slug($validated['label']);
+        $systemNames = Role::allSystemRoleNames();
+
+        if (in_array($roleName, $systemNames, true)) {
+            return back()
+                ->withErrors([
+                    'label' => __('Nama role ":name" adalah nama system role yang dipesan. Pilih nama lain.', ['name' => $roleName]),
+                ])
+                ->withInput();
+        }
+
         $existingRole = Role::where('name', $roleName)->first();
         if ($existingRole) {
             return back()
@@ -143,9 +169,10 @@ class RoleController extends Controller implements HasMiddleware
         $role = Role::create([
             'name' => $roleName,
             'label' => $validated['label'],
+            'is_system' => false,
         ]);
 
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             $role->permissions()->sync($validated['permissions']);
         }
         Cache::forget("sidebar.permission_map.role.{$role->id}");
@@ -204,26 +231,39 @@ class RoleController extends Controller implements HasMiddleware
                 ->withInput();
         }
 
-        $protectedRoles = ['admin', 'customer'];
-        if (in_array($role->name, $protectedRoles)) {
+        $systemNames = Role::allSystemRoleNames();
+
+        if ((bool) $role->is_system || in_array($role->name, $systemNames, true)) {
             $role->update([
                 'label' => $validated['label'],
             ]);
         } else {
+            if (in_array($newSlug, $systemNames, true)) {
+                return back()
+                    ->withErrors([
+                        'label' => __('Nama system role dipesan. Pilih nama lain.'),
+                    ])
+                    ->withInput();
+            }
             $role->update([
                 'name' => $newSlug,
                 'label' => $validated['label'],
             ]);
         }
 
-        $hiddenPermissions = session()->pull('role_hidden_permissions_' . $role->id, []);
+        $hiddenPermissions = session()->pull('role_hidden_permissions_'.$role->id, []);
         $newPermissions = $validated['permissions'] ?? [];
         $finalPermissions = array_unique(array_merge($newPermissions, $hiddenPermissions));
 
-        if (!empty($finalPermissions)) {
-            $role->permissions()->sync($finalPermissions);
+        if ((bool) $role->is_system || in_array($role->name, $systemNames, true)) {
+            // System role tidak boleh diedit permissionnya via UI.
+            // Permission sync hanya diizinkan lewat artisan roles:normalize.
         } else {
-            $role->permissions()->detach();
+            if (! empty($finalPermissions)) {
+                $role->permissions()->sync($finalPermissions);
+            } else {
+                $role->permissions()->detach();
+            }
         }
         Cache::forget("sidebar.permission_map.role.{$role->id}");
         Cache::forget('sidebar.menu.tree.v11');
@@ -236,15 +276,18 @@ class RoleController extends Controller implements HasMiddleware
      */
     public function destroy(Role $role)
     {
-        $protectedRoles = ['admin', 'customer'];
-        if (in_array($role->name, $protectedRoles)) {
-            return back()->with('error', __('Tidak dapat menghapus role inti sistem.'));
+        $systemNames = Role::allSystemRoleNames();
+        if ((bool) $role->is_system || in_array($role->name, $systemNames, true)) {
+            return back()->with('error', __('Role sistem tidak dapat dihapus (atur is_system=false dulu jika memang dibutuhkan).'));
         }
 
         if ($role->users()->count() > 0) {
             return back()->with('error', __('Tidak dapat menghapus role yang masih digunakan oleh pengguna.'));
         }
 
+        $role->permissions()->detach();
+        Cache::forget("sidebar.permission_map.role.{$role->id}");
+        Cache::forget('sidebar.menu.tree.v11');
         $role->delete();
 
         return redirect()->route('roles.index')->with('success', __('Role berhasil dihapus.'));

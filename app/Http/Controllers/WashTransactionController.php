@@ -79,15 +79,12 @@ class WashTransactionController extends Controller implements HasMiddleware
         $todayAttendance = TechnicianAttendance::where('user_id', Auth::id())
             ->whereDate('clock_in', today())
             ->first();
-        $isWashOnly = $user->hasRole('karyawan-wash');
-        $attendanceRole = $isWashOnly ? 'karyawan-wash' : 'kasir-wash';
+        $isWashOnly = $user->hasRole('wash-cashier');
+        $attendanceRole = $isWashOnly ? 'wash-operator' : 'wash-cashier';
         
-        // Fetch wash employees (karyawan-wash) specifically as requested
         $washRoleUserIds = \App\Models\User::query()
             ->where('is_active', true)
-            ->whereHas('role', function ($query) {
-                $query->where('name', 'karyawan-wash');
-            })
+            ->whereHas('washEmployee')
             ->pluck('id');
 
         $presentEmployees = TechnicianAttendance::query()

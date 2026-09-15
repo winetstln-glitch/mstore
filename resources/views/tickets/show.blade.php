@@ -13,7 +13,7 @@
                         <p class="text-muted small mb-0">{{ __('Tiket') }} #{{ $ticket->ticket_number }}</p>
                     </div>
                     <div class="d-flex gap-2 w-100 w-md-auto justify-content-md-end">
-                        @if(Auth::user()->hasRole('admin'))
+                        @if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
                         <button type="button" class="btn btn-success text-white btn-sm flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#ticketNotifyModal">
                             <i class="fa-brands fa-whatsapp me-1"></i> <span class="d-none d-sm-inline">{{ __('Notifikasi') }}</span>
                         </button>
@@ -528,7 +528,7 @@
     </div>
 </div>
 
-@if(Auth::user()->hasRole('admin'))
+@if(Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']))
 @php
     $ticketNotifyTemplate = \App\Models\Setting::getValue('whatsapp_ticket_template', \App\Notifications\TicketAssignedNotification::defaultTemplate());
 @endphp

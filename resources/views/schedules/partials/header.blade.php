@@ -15,7 +15,7 @@
                 $currentMode    = $mode ?? 'weekly';
                 $currentGroup   = $selectedGroup ?? 'all';
                 $currentShift   = $selectedShift ?? 'all';
-                $canManage      = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage');
+                $canManage      = Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasPermission('schedule.manage');
                 $exportParams   = array_filter([
                     'month'      => $month,
                     'year'       => $year,

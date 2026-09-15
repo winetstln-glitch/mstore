@@ -94,7 +94,7 @@ class AppServiceProvider extends ServiceProvider
                 $unreadNotifications = collect();
                 
                 if ($authUser) {
-                    $isAdmin = $authUser->hasRole(Role::ADMIN);
+                    $isAdmin = $authUser->hasRole('finance');
                     $roleId = $authUser->role_id;
                     $runningUnitTests = app()->runningUnitTests();
 

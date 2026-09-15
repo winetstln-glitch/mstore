@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NetworkIncident extends Model
 {
+    use ScopesByUserArea;
+
     protected $fillable = [
         'title', 'description', 'type', 'status', 'severity',
         'region_id', 'olt_id', 'odp_id',

@@ -3,15 +3,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Alarm;
+use App\Models\Company;
 use App\Models\OLT;
 use App\Models\ONT;
 use App\Models\OLTPort;
-use App\Models\Alarm;
 use App\Models\PollingLog;
-use Modules\Network\Services\MonitoringService;
+use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Network\Services\MonitoringService;
 
 class OLTController extends Controller
 {
@@ -19,37 +21,67 @@ class OLTController extends Controller
     {
     }
 
-    /**
-     * Display a listing of OLTs.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $olts = OLT::withCount('onts')->orderBy('name')->paginate(20);
-        
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $oltBase = OLT::query()->forUserArea($user);
+        $ontBase = ONT::withoutTrashed()->has('olt')->forUserArea($user);
+
+        if ($search = $request->get('search')) {
+            $oltBase->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('vendor', 'like', "%{$search}%")
+                    ->orWhere('model', 'like', "%{$search}%");
+            });
+        }
+
+        if ($regionId = $request->get('region_id')) {
+            if ($isSuperAdmin) {
+                $oltBase->where('region_id', $regionId);
+            }
+        }
+
+        $olts = (clone $oltBase)->withCount('onts')->orderBy('name')->paginate(20)->withQueryString();
+
         $stats = [
-            'total_olts' => OLT::count(),
-            'online_olts' => OLT::where('status', 'online')->count(),
-            'total_onts' => ONT::withoutTrashed()->has('olt')->count(),
-            'online_onts' => ONT::withoutTrashed()->has('olt')->where('oper_status', 'online')->count(),
+            'total_olts' => (clone $oltBase)->count(),
+            'online_olts' => (clone $oltBase)->where('status', 'online')->count(),
+            'total_onts' => (clone $ontBase)->count(),
+            'online_onts' => (clone $ontBase)->where('oper_status', 'online')->count(),
         ];
-        
-        return view('olt.index', compact('olts', 'stats'));
+
+        $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
+
+        return view('olt.index', compact('olts', 'stats', 'regions', 'isSuperAdmin'))
+            ->with('scopeRegion', $user?->coordinator?->region)
+            ->with('scopeCompany', $user?->company);
     }
 
-    /**
-     * Show the form for creating a new OLT.
-     */
     public function create()
     {
-        return view('olt.form');
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $regions = Region::orderBy('name')->get();
+        $companies = $isSuperAdmin ? Company::orderBy('name')->get() : null;
+
+        return view('olt.form', compact('regions', 'companies', 'isSuperAdmin'))
+            ->with('defaultCompanyId', $user->company_id)
+            ->with('defaultRegionId', $user->coordinator?->region_id);
     }
 
-    /**
-     * Store a newly created OLT.
-     */
     public function store(Request $request)
     {
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
         $validated = $request->validate([
+            'region_id' => $isSuperAdmin ? 'nullable|exists:regions,id' : 'nullable',
+            'company_id' => $isSuperAdmin ? 'nullable|exists:companies,id' : 'nullable',
             'name' => 'required|string|max:100',
             'ip_address' => 'nullable|ip|unique:olts,ip_address,NULL,id,deleted_at,NULL',
             'vendor' => 'nullable|string|max:50',
@@ -74,6 +106,8 @@ class OLTController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['status'] = 'offline';
+        $validated['company_id'] = $isSuperAdmin ? ($validated['company_id'] ?? $user->company_id) : $user->company_id;
+        $validated['region_id'] = $isSuperAdmin ? ($validated['region_id'] ?? $user->coordinator?->region_id) : $user->coordinator?->region_id;
 
         if ((! isset($validated['ip_address']) || $validated['ip_address'] === null) && $request->filled('host')) {
             $validated['ip_address'] = $request->input('host');
@@ -84,9 +118,9 @@ class OLTController extends Controller
         if ((! isset($validated['read_community']) || $validated['read_community'] === null) && $request->filled('snmp_community')) {
             $validated['read_community'] = $request->input('snmp_community');
         }
-        
+
         $olt = OLT::create($validated);
-        
+
         try {
             $driver = $this->monitoringService->getOltDriver($olt);
             $connected = $driver->testConnection();
@@ -96,52 +130,57 @@ class OLTController extends Controller
         } catch (\Throwable $e) {
             Log::error("Error testing connection after creating OLT: " . $e->getMessage());
         }
-        
+
         return redirect()->route('olt.index')->with('success', 'OLT berhasil ditambahkan');
     }
 
-    /**
-     * Display the specified OLT with its ONUs.
-     */
-    public function show(OLT $olt)
+    public function show(OLT $olt, Request $request)
     {
+        $user = $request->user();
         $olt->load('ports');
         $onts = ONT::where('olt_id', $olt->id)
+            ->forUserArea($user)
             ->with('port')
             ->orderBy('ont_id')
             ->get();
         $ports = $olt->ports;
-        
-        // Get all OLTs for select dropdown
-        $allOlts = OLT::orderBy('name')->get();
-        
+
+        $allOlts = OLT::query()->forUserArea($user)->orderBy('name')->get();
+
         $stats = [
             'total_onts' => $onts->count(),
             'online_onts' => $onts->where('oper_status', 'online')->count(),
             'offline_onts' => $onts->where('oper_status', 'offline')->count(),
             'dying_gasp_onts' => $onts->where('oper_status', 'dying_gasp')->count(),
         ];
-        
-        // Latest polling log
+
         $lastPoll = PollingLog::where('olt_id', $olt->id)->latest()->first();
-        
+
         return view('olt.show', compact('olt', 'onts', 'ports', 'stats', 'lastPoll', 'allOlts'));
     }
 
-    /**
-     * Show the form for editing the specified OLT.
-     */
     public function edit(OLT $olt)
     {
-        return view('olt.form', compact('olt'));
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
+        $regions = Region::orderBy('name')->get();
+        $companies = $isSuperAdmin ? Company::orderBy('name')->get() : null;
+
+        return view('olt.form', compact('olt', 'regions', 'companies', 'isSuperAdmin'))
+            ->with('defaultCompanyId', $user->company_id)
+            ->with('defaultRegionId', $user->coordinator?->region_id)
+            ->with('scopeCompany', $user?->company);
     }
 
-    /**
-     * Update the specified OLT.
-     */
     public function update(Request $request, OLT $olt)
     {
+        $user = $request->user();
+        $isSuperAdmin = $user->hasAnyRole(config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']));
+
         $validated = $request->validate([
+            'region_id' => $isSuperAdmin ? 'nullable|exists:regions,id' : 'nullable',
+            'company_id' => $isSuperAdmin ? 'nullable|exists:companies,id' : 'nullable',
             'name' => 'required|string|max:100',
             'ip_address' => 'nullable|ip|unique:olts,ip_address,' . $olt->id . ',id,deleted_at,NULL',
             'vendor' => 'nullable|string|max:50',
@@ -165,6 +204,13 @@ class OLTController extends Controller
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+        if ($isSuperAdmin) {
+            if (array_key_exists('company_id', $validated) && $validated['company_id'] === null) {
+                $validated['company_id'] = $olt->company_id ?? $user->company_id;
+            }
+        } else {
+            unset($validated['company_id'], $validated['region_id']);
+        }
 
         if ((! array_key_exists('ip_address', $validated) || $validated['ip_address'] === null) && $request->filled('host')) {
             $validated['ip_address'] = $request->input('host');
@@ -175,13 +221,13 @@ class OLTController extends Controller
         if ((! array_key_exists('read_community', $validated) || $validated['read_community'] === null) && $request->filled('snmp_community')) {
             $validated['read_community'] = $request->input('snmp_community');
         }
-        
+
         $olt->update($validated);
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true]);
         }
-        
+
         return redirect()->route('olt.index')->with('success', 'OLT berhasil diupdate');
     }
 
@@ -260,9 +306,9 @@ class OLTController extends Controller
     /**
      * Batch check status of all active OLTs.
      */
-    public function batchCheckStatus()
+    public function batchCheckStatus(Request $request)
     {
-        $olts = OLT::where('is_active', true)->get();
+        $olts = OLT::query()->forUserArea($request->user())->where('is_active', true)->get();
         $results = [];
         
         foreach ($olts as $olt) {

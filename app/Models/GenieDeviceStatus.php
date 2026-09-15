@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
 
 class GenieDeviceStatus extends Model
 {
+    use ScopesByUserArea;
+
     protected $fillable = [
         'customer_id',
         'onu_serial',

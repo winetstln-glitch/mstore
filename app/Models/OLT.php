@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesByUserArea;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OLT extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, ScopesByUserArea;
 
     protected $table = 'olts';
 
     protected $fillable = [
+        'region_id', 'company_id',
         'name', 'ip_address', 'vendor', 'model', 'location',
         'read_community', 'write_community', 'snmp_version', 'snmpv3_config',
         'poll_interval', 'snmp_timeout', 'snmp_retries',
@@ -65,5 +68,15 @@ class OLT extends Model
     public function scopeOnline($query)
     {
         return $query->where('status', 'online');
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

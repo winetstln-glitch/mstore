@@ -270,13 +270,13 @@ class SlaMonitoringService
         if ($coordinatorUserId) {
             $coordinatorUser = \App\Models\User::find($coordinatorUserId);
             if ($coordinatorUser && trim((string) $coordinatorUser->phone) !== '') {
-                $targets[] = ['channel' => 'whatsapp', 'target' => $coordinatorUser->phone, 'role' => 'coordinator'];
+                $targets[] = ['channel' => 'whatsapp', 'target' => $coordinatorUser->phone, 'role' => 'field-leader'];
             }
         }
 
         $telegramChatId = trim((string) \App\Models\Setting::getValue('telegram_escalation_chat_id', ''));
         if ($telegramChatId !== '') {
-            $targets[] = ['channel' => 'telegram', 'target' => $telegramChatId, 'role' => 'noc'];
+            $targets[] = ['channel' => 'telegram', 'target' => $telegramChatId, 'role' => 'noc-operator'];
         }
 
         $email = trim((string) \App\Models\Setting::getValue('sla_escalation_email', ''));

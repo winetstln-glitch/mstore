@@ -1,7 +1,7 @@
 {{-- ========== WEEKLY MODE ========== --}}
 @php 
     $colspan = 1 + count($weeksData); 
-    $canManage = Auth::user()->hasRole('admin') || Auth::user()->hasPermission('schedule.manage');
+    $canManage = Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance']) || Auth::user()->hasPermission('schedule.manage');
 @endphp
 
 @if($canManage)

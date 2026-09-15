@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Role;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -9,22 +10,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckPermission
 {
-    /**
-     * Daftar nama role yang memiliki akses ke semua fitur (super-admin).
-     * Gunakan config agar mudah diubah tanpa deploy ulang.
-     *
-     * @var array<string>
-     */
     protected function getSuperAdminRoles(): array
     {
-        return config('auth.super_admin_roles', ['admin', 'direktur', 'hrd-manager']);
+        return Role::superAdminRoleNames();
     }
 
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next, string $permission): Response
     {
         if (! Auth::check()) {
@@ -33,10 +23,12 @@ class CheckPermission
 
         $user = Auth::user();
 
-        // Super-admin roles bypass semua permission check.
-        // Nama role dibaca dari config/auth.php agar mudah diubah tanpa modifikasi kode.
+        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+            return $next($request);
+        }
+
         foreach ($this->getSuperAdminRoles() as $superRole) {
-            if ($user->hasRole($superRole)) {
+            if (method_exists($user, 'hasRole') && $user->hasRole($superRole)) {
                 return $next($request);
             }
         }
@@ -44,7 +36,7 @@ class CheckPermission
         $permissions = explode('|', $permission);
 
         foreach ($permissions as $perm) {
-            if ($user->hasPermission($perm)) {
+            if (method_exists($user, 'hasPermission') && $user->hasPermission($perm)) {
                 return $next($request);
             }
         }

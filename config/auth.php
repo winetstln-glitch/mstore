@@ -20,16 +20,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Super Admin Roles
+    | Super Admin Roles (SSOT diambil dari config/roles.php)
     |--------------------------------------------------------------------------
     |
     | Daftar nama role yang dianggap sebagai super-admin dan mendapat bypass
-    | pada semua permission check. Digunakan oleh CheckPermission middleware.
-    | Untuk mengubah, sesuaikan array ini — tidak perlu modifikasi kode.
+    | pada semua permission check. Digunakan oleh User::isSuperAdmin(),
+    | CheckPermission middleware, dll.
+    |
+    | ⚠ NOTE: Agar SSOT, nilai utama disimpan di config/roles.php di key
+    | `super_admin_role_names`. Array di bawah ini adalah FALLBACK SAJA
+    | jika config/roles belum di-load.
     |
     */
 
-    'super_admin_roles' => ['admin', 'direktur', 'hrd-manager'],
+    'super_admin_roles' => array_values(array_unique(array_merge(
+        \App\Models\Role::superAdminRoleNames(),
+        ['admin']
+    ))),
 
     /*
     |--------------------------------------------------------------------------

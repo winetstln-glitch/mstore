@@ -14,7 +14,7 @@ class KasbonLoanController extends Controller
 {
     public function store(Request $request)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -43,7 +43,7 @@ class KasbonLoanController extends Controller
 
     public function update(Request $request, KasbonLoan $kasbonLoan)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -69,7 +69,7 @@ class KasbonLoanController extends Controller
 
     public function destroy(KasbonLoan $kasbonLoan)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -80,7 +80,7 @@ class KasbonLoanController extends Controller
 
     public function storeInstallment(Request $request, KasbonLoan $kasbonLoan)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
@@ -116,7 +116,7 @@ class KasbonLoanController extends Controller
 
     public function destroyInstallment(KasbonLoan $kasbonLoan, KasbonInstallment $installment)
     {
-        if (! Auth::user()->hasAnyRole(['admin', 'staf-keuangan', 'staf keuangan', 'finance', Role::HRD_MANAGER, 'hrd manager', 'hrd', 'manager hrd', Role::DIREKTUR, 'direktur', 'owner', 'owner pendiri'])) {
+        if (! Auth::user()->hasAnyRole(['super-admin', 'manager', 'finance'])) {
             abort(403, 'Unauthorized');
         }
 
