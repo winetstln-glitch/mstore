@@ -10,40 +10,12 @@
             <p class="text-muted small mb-0">{{ __('Kelola pengguna sistem dan perannya.') }}</p>
         </div>
         <div class="d-flex flex-column flex-xl-row gap-2 w-100 justify-content-xl-end align-items-stretch align-items-xl-center">
-            <form action="{{ route('users.index') }}" method="GET" class="d-flex flex-wrap gap-2 w-100 justify-content-xl-end align-items-center">
-                <div style="flex: 1; min-width: 150px; max-width: 300px;">
-                    <input type="text" name="search" class="form-control form-control-sm w-100" placeholder="{{ __('Cari pengguna...') }}" value="{{ request('search') }}">
-                </div>
-                <div>
-                    <select name="role_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 130px;">
-                        <option value="">{{ __('Semua Peran') }}</option>
-                        @foreach(($roles ?? collect()) as $role)
-                            <option value="{{ $role->id }}" @selected((string) request('role_id') === (string) $role->id)>{{ $role->label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 100px;">
-                        <option value="10" @selected(request('per_page') == '10' || !request()->has('per_page'))>10 Data</option>
-                        <option value="20" @selected(request('per_page') == '20')>20 Data</option>
-                        <option value="50" @selected(request('per_page') == '50')>50 Data</option>
-                        <option value="100" @selected(request('per_page') == '100')>100 Data</option>
-                        <option value="all" @selected(request('per_page') == 'all')>Semua</option>
-                    </select>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-primary text-nowrap" type="submit">
-                        <i class="fa-solid fa-search me-1"></i>{{ __('Cari') }}
-                    </button>
-                </div>
-                @if(request()->filled('search') || request()->filled('role_id') || request()->filled('per_page'))
-                    <div>
-                        <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
-                            <i class="fa-solid fa-rotate-left me-1"></i>{{ __('Reset') }}
-                        </a>
-                    </div>
-                @endif
-            </form>
+            <x-table-toolbar 
+                :route="route('users.index')" 
+                searchPlaceholder="Cari pengguna..." 
+                :showRoleFilter="true" 
+                :roles="$roles ?? collect()" 
+            />
 
             <div class="d-flex flex-wrap gap-2 w-100 w-xl-auto">
                 <a href="{{ route('users.export', request()->query()) }}" class="btn btn-sm btn-outline-success text-nowrap flex-fill flex-sm-grow-0">

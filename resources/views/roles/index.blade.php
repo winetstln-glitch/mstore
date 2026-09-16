@@ -9,30 +9,10 @@
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold">{{ __('Role Management') }}</h5>
                 <div class="d-flex gap-2 flex-wrap">
-                    <form action="{{ route('roles.index') }}" method="GET" class="d-flex gap-2">
-                        <div class="input-group input-group-sm">
-                            <input type="text" name="search" class="form-control" placeholder="{{ __('Search roles...') }}" value="{{ request('search') }}">
-                            @if(request('sort'))
-                                <input type="hidden" name="sort" value="{{ request('sort') }}">
-                                <input type="hidden" name="direction" value="{{ request('direction') }}">
-                            @endif
-                            <button type="submit" class="btn btn-outline-primary">
-                                <i class="fa-solid fa-search"></i>
-                            </button>
-                            @if(request('search') || request('per_page'))
-                                <a href="{{ route('roles.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fa-solid fa-times"></i>
-                                </a>
-                            @endif
-                            <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()" style="max-width: 100px;">
-                                <option value="10" @selected(request('per_page') == '10' || !request()->has('per_page'))>10 Data</option>
-                                <option value="20" @selected(request('per_page') == '20')>20 Data</option>
-                                <option value="50" @selected(request('per_page') == '50')>50 Data</option>
-                                <option value="100" @selected(request('per_page') == '100')>100 Data</option>
-                                <option value="all" @selected(request('per_page') == 'all')>Semua</option>
-                            </select>
-                        </div>
-                    </form>
+                    <x-table-toolbar 
+                        :route="route('roles.index')" 
+                        searchPlaceholder="Search roles..." 
+                    />
                     <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-plus me-1"></i> {{ __('Create New Role') }}
                     </a>
