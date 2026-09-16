@@ -79,17 +79,32 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        if ($user && !$user->hasPermission('dashboard.view')) {
+        if ($user) {
+            // Jika user adalah customer, langsung redirect ke portal
             if ($user->hasRole('customer')) {
                 return redirect()->route('client.onu-wifi.show');
             }
-            if ($user->hasPermission('atk.pos')) {
-                return redirect()->route('atk.dashboard');
-            }
-            if ($user->hasPermission('wash.pos') && $user->hasPermission('wash.view')) {
+            
+            // Jika user adalah kasir wash / karyawan wash, arahkan ke dashboard wash
+            if ($user->hasRole('kasir-wash') || $user->hasRole('wash-cashier') || $user->hasRole('karyawan-wash') || $user->hasRole('wash-operator')) {
                 return redirect()->route('wash.dashboard');
             }
-            abort(403);
+            
+            // Jika user adalah kasir ATK, arahkan ke dashboard ATK
+            if ($user->hasRole('kasir-atk') || $user->hasRole('atk-cashier')) {
+                return redirect()->route('atk.dashboard');
+            }
+
+            // Jika role lain tapi tidak punya izin melihat dashboard utama
+            if (!$user->hasPermission('dashboard.view')) {
+                if ($user->hasPermission('atk.pos')) {
+                    return redirect()->route('atk.dashboard');
+                }
+                if ($user->hasPermission('wash.pos') && $user->hasPermission('wash.view')) {
+                    return redirect()->route('wash.dashboard');
+                }
+                abort(403);
+            }
         }
 
         // Get User's Attendance for Today
