@@ -404,7 +404,7 @@ class DashboardController extends Controller
             ->get();
 
         $upcomingInstallations = $installationQuery->clone()
-            ->with(['customer', 'field-technician'])
+            ->with(['customer', 'technician'])
             ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
             ->orderBy('plan_date', 'asc')
             ->take(5)
