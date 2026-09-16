@@ -193,7 +193,7 @@ class SidebarMenu
                 ], permissions: ['atk.report']),
             ], permissions: ['atk.view', 'atk.pos', 'atk.manage', 'atk.report']),
                     self::group('bu-wash', 'GT Wash', [
-                        self::link('wash-dashboard', 'Dashboard', 'wash.dashboard', permissions: ['wash.view']),
+                        self::link('wash-dashboard', 'Dashboard', 'wash.dashboard', permissions: ['wash.report', 'wash.manage']),
                         self::link('wash-pos', 'POS Wash', 'wash.pos', permissions: ['wash.pos']),
                         self::link('wash-member-packages', 'Paket Member (Berlangganan)', 'wash.member-packages.index', routePatterns: ['wash.member-packages.*'], permissions: ['wash.package.view']),
                         self::link('wash-transactions', 'Transaksi', 'wash.transactions.index', permissions: ['wash.report']),

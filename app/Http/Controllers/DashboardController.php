@@ -97,8 +97,8 @@ class DashboardController extends Controller
             ->whereDate('clock_in', today())
             ->first();
 
-        if ($user->hasPermission('ticket.assign')) {
-            $attendanceOverview = $this->buildRoleAttendanceOverview('field-technician');
+        if ($user->hasAnyRole(['field-technician', 'wash-operator'])) {
+            $attendanceOverview = $this->buildRoleAttendanceOverview($user->role->name);
             $shiftSchedule = $this->getTodayShiftSchedule($user->id);
             $stats = [
                 'assigned_tickets' => $user->tickets()->whereIn('status', ['assigned', 'in_progress'])->count(),

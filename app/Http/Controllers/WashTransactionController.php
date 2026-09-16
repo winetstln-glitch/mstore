@@ -66,6 +66,11 @@ class WashTransactionController extends Controller implements HasMiddleware
 
     public function dashboard()
     {
+        $user = Auth::user();
+        if (!$user->hasPermission('wash.report') && !$user->hasPermission('wash.manage')) {
+            return redirect()->route('dashboard');
+        }
+
         try {
             $syncService = app(EmployeeSyncService::class);
             $syncService->ensureWashEmployeesFromUsers();
