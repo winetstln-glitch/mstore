@@ -99,7 +99,7 @@ class LeaveRequestController extends Controller implements HasMiddleware
             $query->whereRaw('LOWER(reason) LIKE ?', ['%'.$kw.'%']);
         }
 
-        $requests = $query->paginate(10)->withQueryString();
+        $requests = $query->customPaginate()->withQueryString();
 
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
@@ -136,7 +136,7 @@ class LeaveRequestController extends Controller implements HasMiddleware
             $query->whereRaw('LOWER(reason) LIKE ?', ['%'.$kw.'%']);
         }
 
-        $requests = $query->paginate(10)->withQueryString();
+        $requests = $query->customPaginate()->withQueryString();
 
         return view('leave_requests.manage-leave', compact('requests'));
     }

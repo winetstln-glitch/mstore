@@ -42,7 +42,7 @@ class TechnicianController extends Controller
             ->whereIn('status', ['solved', 'closed'])
             ->with('customer')
             ->latest()
-            ->paginate(10);
+            ->customPaginate();
 
         return response()->json($tickets);
     }

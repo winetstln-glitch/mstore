@@ -64,6 +64,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        \Illuminate\Database\Eloquent\Builder::macro('customPaginate', function () {
+            $perPage = request()->input('per_page', 10);
+            if ($perPage === 'all') {
+                $perPage = $this->count() > 0 ? $this->count() : 1;
+            } else {
+                $perPage = (int) $perPage;
+            }
+            return $this->paginate($perPage);
+        });
+
         $shouldForceHttps = app()->environment('production') || (bool) env('FORCE_HTTPS', false);
         if ($shouldForceHttps) {
             URL::forceScheme('https');

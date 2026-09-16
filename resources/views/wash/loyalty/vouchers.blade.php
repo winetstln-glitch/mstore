@@ -70,7 +70,7 @@
             </div>
 
             <div class="mt-3">
-                {{ $vouchers->links() }}
+                {{ $vouchers->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

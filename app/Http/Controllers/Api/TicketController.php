@@ -32,7 +32,7 @@ class TicketController extends Controller
             $query->where('customer_id', $request->input('customer_id'));
         }
 
-        return response()->json($query->latest()->paginate(15));
+        return response()->json($query->latest()->customPaginate());
     }
 
     /**

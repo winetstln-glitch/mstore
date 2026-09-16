@@ -63,7 +63,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $closings->links() }}
+            {{ $closings->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

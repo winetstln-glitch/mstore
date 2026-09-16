@@ -189,7 +189,7 @@
             </table>
         </div>
         <div class="card-footer bg-transparent border-0 pt-2">
-            {{ $expenses->links() }}
+            {{ $expenses->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

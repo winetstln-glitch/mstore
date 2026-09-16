@@ -29,7 +29,7 @@ class EscalationQueueController extends Controller implements HasMiddleware
             })
             ->orderByRaw("CASE WHEN sla_status IS NOT NULL THEN 1 ELSE 2 END")
             ->latest('created_at')
-            ->paginate(30);
+            ->customPaginate();
 
         return view('sla.escalation_queue', [
             'tickets' => $tickets,

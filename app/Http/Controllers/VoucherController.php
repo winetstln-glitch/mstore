@@ -32,7 +32,7 @@ class VoucherController extends Controller implements HasMiddleware
             ->when($search !== '', fn ($q) => $q->where('username', 'like', '%'.$search.'%'))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->latest('id')
-            ->paginate(25)
+            ->customPaginate()
             ->withQueryString();
 
         $hotspotProfiles = HotspotProfile::query()

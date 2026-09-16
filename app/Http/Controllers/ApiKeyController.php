@@ -20,7 +20,7 @@ class ApiKeyController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $keys = ApiKey::latest()->paginate(10);
+        $keys = ApiKey::latest()->customPaginate();
 
         return view('settings.apikeys.index', compact('keys'));
     }

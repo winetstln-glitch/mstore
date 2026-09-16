@@ -69,7 +69,7 @@
             </div>
             @if($regions->hasPages())
                 <div class="card-footer py-3">
-                    {{ $regions->links() }}
+                    {{ $regions->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

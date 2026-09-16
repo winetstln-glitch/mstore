@@ -52,7 +52,7 @@ class InvestorController extends Controller implements HasMiddleware
             }
         }
 
-        $investors = $query->latest()->paginate(10);
+        $investors = $query->latest()->customPaginate();
 
         return view('investors.index', compact('investors'));
     }
@@ -116,7 +116,7 @@ class InvestorController extends Controller implements HasMiddleware
             }
         }
 
-        $transactions = $investor->transactions()->latest('transaction_date')->paginate(15);
+        $transactions = $investor->transactions()->latest('transaction_date')->customPaginate();
 
         $totalCapital = $investor->transactions()->where('type', 'income')->sum('amount');
         $totalWithdrawal = $investor->transactions()->where('type', 'expense')->sum('amount');

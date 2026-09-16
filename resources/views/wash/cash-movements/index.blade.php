@@ -45,7 +45,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $movements->links() }}
+            {{ $movements->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

@@ -904,7 +904,7 @@ class AtkTransactionController extends Controller implements HasMiddleware
             });
         }
 
-        $transactions = $query->latest()->paginate(15)->appends($request->query());
+        $transactions = $query->latest()->customPaginate()->appends($request->query());
 
         // Total revenue for current filter
         $sumQuery = AtkTransaction::query();

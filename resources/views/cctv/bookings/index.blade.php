@@ -64,7 +64,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $bookings->links() }}
+            {{ $bookings->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

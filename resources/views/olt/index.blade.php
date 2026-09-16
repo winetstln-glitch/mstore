@@ -206,7 +206,7 @@
                 <small class="text-muted">
                     Menampilkan {{ $olts->firstItem() ?? 0 }} - {{ $olts->lastItem() ?? 0 }} dari {{ $olts->total() }} data
                 </small>
-                {{ $olts->links() }}
+                {{ $olts->appends(request()->query())->links() }}
             </div>
         </div>
         @endif

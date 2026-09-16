@@ -23,7 +23,7 @@ class WhatsAppBotBuilderController extends Controller implements HasMiddleware
     {
         $menus = WhatsAppMenu::orderBy('priority', 'desc')
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->customPaginate();
 
         return view('whatsapp.builder', compact('menus'));
     }

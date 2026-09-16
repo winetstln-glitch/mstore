@@ -26,7 +26,7 @@ class TechnicianController extends Controller implements HasMiddleware
     {
         $technicians = User::whereHas('role', function ($q) {
             $q->where('name', 'technician');
-        })->with('employee')->latest()->paginate(10);
+        })->with('employee')->latest()->customPaginate();
 
         return view('technicians.index', compact('technicians'));
     }

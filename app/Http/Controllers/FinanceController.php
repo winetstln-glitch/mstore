@@ -1215,7 +1215,7 @@ class FinanceController extends Controller implements HasMiddleware
 
         $query->whereBetween('transaction_date', [$startDate, $endDate]);
 
-        $transactions = $query->paginate(15);
+        $transactions = $query->customPaginate();
 
         // Calculate Totals
         $totalsQuery = Transaction::query();

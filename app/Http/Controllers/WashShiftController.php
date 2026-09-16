@@ -19,7 +19,7 @@ class WashShiftController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $shifts = WashShift::orderBy('name')->paginate(20);
+        $shifts = WashShift::orderBy('name')->customPaginate();
         return view('wash.shifts.index', compact('shifts'));
     }
 
@@ -50,7 +50,7 @@ class WashShiftController extends Controller implements HasMiddleware
 
     public function show(WashShift $shift)
     {
-        $sessions = $shift->sessions()->latest('opened_at')->paginate(20);
+        $sessions = $shift->sessions()->latest('opened_at')->customPaginate();
         return view('wash.shifts.show', compact('shift', 'sessions'));
     }
 

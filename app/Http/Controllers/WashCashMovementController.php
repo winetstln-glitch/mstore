@@ -24,7 +24,7 @@ class WashCashMovementController extends Controller implements HasMiddleware
     {
         $movements = WashCashMovement::with('cashRegister', 'user', 'shiftSession')
             ->latest('movement_date')
-            ->paginate(20);
+            ->customPaginate();
         return view('wash.cash-movements.index', compact('movements'));
     }
 

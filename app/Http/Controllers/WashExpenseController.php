@@ -76,7 +76,7 @@ class WashExpenseController extends Controller implements HasMiddleware
             $query->with('washStockMovement.stockItem');
         }
         
-        $expenses = $query->latest('transaction_date')->paginate(15);
+        $expenses = $query->latest('transaction_date')->customPaginate();
         $stockItems = $hasStockTables
             ? WashStockItem::query()
                 ->where('is_active', true)

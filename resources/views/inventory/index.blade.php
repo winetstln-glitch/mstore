@@ -437,7 +437,7 @@
                 {{-- Pagination --}}
                 @if($transactions->hasPages())
                 <div class="card-footer bg-white py-3">
-                    {{ $transactions->links() }}
+                    {{ $transactions->appends(request()->query())->links() }}
                 </div>
                 @endif
             </div>

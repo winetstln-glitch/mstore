@@ -45,7 +45,7 @@ class OLTController extends Controller
             }
         }
 
-        $olts = (clone $oltBase)->withCount('onts')->orderBy('name')->paginate(20)->withQueryString();
+        $olts = (clone $oltBase)->withCount('onts')->orderBy('name')->customPaginate()->withQueryString();
 
         $stats = [
             'total_olts' => (clone $oltBase)->count(),

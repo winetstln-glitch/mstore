@@ -158,7 +158,7 @@
                 </table>
             </div>
             <div class="p-3 p-md-4 border-top">
-                {{ $requests->links() }}
+                {{ $requests->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

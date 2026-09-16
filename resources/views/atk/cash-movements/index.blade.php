@@ -140,7 +140,7 @@
                 </table>
             </div>
             <div class="mt-3">
-                {{ $movements->links() }}
+                {{ $movements->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

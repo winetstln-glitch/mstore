@@ -59,7 +59,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $shifts->links() }}
+            {{ $shifts->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

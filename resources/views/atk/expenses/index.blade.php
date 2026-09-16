@@ -48,7 +48,7 @@
                     @endforelse
                 </tbody>
             </table>
-            {{ $expenses->links() }}
+            {{ $expenses->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

@@ -59,7 +59,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $registers->links() }}
+            {{ $registers->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

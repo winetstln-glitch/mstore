@@ -63,7 +63,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $suppliers->links() }}
+            {{ $suppliers->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

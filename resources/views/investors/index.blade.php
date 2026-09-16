@@ -85,7 +85,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $investors->links() }}
+            {{ $investors->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

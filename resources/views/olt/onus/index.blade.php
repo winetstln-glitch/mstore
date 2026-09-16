@@ -172,7 +172,7 @@
                 </div>
 
                 <div class="mt-4">
-                    {{ $onts->links() }}
+                    {{ $onts->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

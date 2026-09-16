@@ -166,7 +166,7 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             'total_days' => $allAttendances->count(),
         ];
 
-        $attendances = $query->latest('clock_in')->paginate(15)->withQueryString();
+        $attendances = $query->latest('clock_in')->customPaginate()->withQueryString();
 
         $techniciansQuery = \App\Models\User::whereHas('role', function ($q) {
             $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);

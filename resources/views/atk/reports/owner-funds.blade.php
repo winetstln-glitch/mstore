@@ -110,7 +110,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $funds->links() }}
+            {{ $funds->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

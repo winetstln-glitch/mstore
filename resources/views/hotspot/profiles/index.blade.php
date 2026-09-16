@@ -220,7 +220,7 @@
 
             @if($packages->hasPages())
                 <div class="px-3 py-2 border-top">
-                    {{ $packages->links() }}
+                    {{ $packages->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

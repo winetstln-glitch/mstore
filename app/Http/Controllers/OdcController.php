@@ -46,7 +46,7 @@ class OdcController extends Controller implements HasMiddleware
             });
         }
 
-        $odcs = $query->latest()->paginate(10)->withQueryString();
+        $odcs = $query->latest()->customPaginate()->withQueryString();
         $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 
         return view('odcs.index', compact('odcs', 'regions', 'isSuperAdmin'))

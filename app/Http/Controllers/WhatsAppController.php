@@ -307,7 +307,7 @@ class WhatsAppController extends Controller implements HasMiddleware
             $logs->where('phone_number', $selectedPhone);
         }
         
-        $logs = $logs->paginate(100)->withQueryString();
+        $logs = $logs->customPaginate()->withQueryString();
         
         // If selected phone, show conversation view
         $conversationView = $selectedPhone ? true : false;

@@ -27,7 +27,7 @@ class AtkOwnerFundController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $funds = OwnerFund::latest()->paginate(15);
+        $funds = OwnerFund::latest()->customPaginate();
         $currentBalance = optional(OwnerFund::latest()->first())->balance ?? 0;
         return view('atk.owner-funds.index', compact('funds', 'currentBalance'));
     }

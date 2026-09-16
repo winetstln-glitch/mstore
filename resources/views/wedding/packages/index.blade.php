@@ -61,7 +61,7 @@
                 </table>
             </div>
 
-            {{ $packages->links() }}
+            {{ $packages->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

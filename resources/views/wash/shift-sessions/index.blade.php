@@ -56,7 +56,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $sessions->links() }}
+            {{ $sessions->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

@@ -45,7 +45,7 @@ class ClosureController extends Controller implements HasMiddleware
             $query->where('region_id', $request->region_id);
         }
 
-        $closures = $query->latest()->paginate(10)->withQueryString();
+        $closures = $query->latest()->customPaginate()->withQueryString();
         $odcs = Odc::query()->forUserArea($user)->orderBy('name')->get();
         $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 

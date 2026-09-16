@@ -133,7 +133,7 @@
                 </div>
                 
                 <div class="mt-3">
-                    {{ $odps->links() }}
+                    {{ $odps->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

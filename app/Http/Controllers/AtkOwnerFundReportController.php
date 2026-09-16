@@ -35,7 +35,7 @@ class AtkOwnerFundReportController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
-        $funds = $query->paginate(20);
+        $funds = $query->customPaginate();
 
         // Calculate current balance based on the latest transaction before or during the end date
         $latestTransaction = OwnerFund::whereDate('created_at', '<=', $end)->orderBy('created_at', 'desc')->first();

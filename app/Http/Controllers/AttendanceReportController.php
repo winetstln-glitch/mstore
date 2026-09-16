@@ -34,7 +34,7 @@ class AttendanceReportController extends Controller
             roleName: $roleName
         );
 
-        $attendances = $attendancesQuery->latest('clock_in')->paginate(15)->withQueryString();
+        $attendances = $attendancesQuery->latest('clock_in')->customPaginate()->withQueryString();
         $stats = $this->reportService->calculateDailyStats($attendancesQuery->get());
 
         $users = $this->getEligibleUsers();

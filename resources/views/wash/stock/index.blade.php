@@ -68,7 +68,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $items->links() }}
+            {{ $items->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

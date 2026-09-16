@@ -26,7 +26,7 @@ class CustomerController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        return response()->json($query->paginate(15));
+        return response()->json($query->customPaginate());
     }
 
     /**

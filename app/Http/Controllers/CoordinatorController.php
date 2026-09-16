@@ -29,7 +29,7 @@ class CoordinatorController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $coordinators = Coordinator::with(['region', 'user', 'router'])->latest()->paginate(10);
+        $coordinators = Coordinator::with(['region', 'user', 'router'])->latest()->customPaginate();
 
         return view('coordinators.index', compact('coordinators'));
     }

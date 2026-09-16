@@ -159,7 +159,7 @@
                 <!-- Pagination -->
                 @if($installations instanceof \Illuminate\Pagination\LengthAwarePaginator)
                 <div class="mt-4">
-                    {{ $installations->links() }}
+                    {{ $installations->appends(request()->query())->links() }}
                 </div>
                 @endif
             </div>

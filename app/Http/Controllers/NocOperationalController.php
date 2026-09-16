@@ -32,7 +32,7 @@ class NocOperationalController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
-        $items = $query->latest('started_at')->paginate(30)->withQueryString();
+        $items = $query->latest('started_at')->customPaginate()->withQueryString();
 
         return view('noc.operational.area_outage', [
             'items' => $items,
@@ -57,7 +57,7 @@ class NocOperationalController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
-        $items = $query->latest('started_at')->paginate(30)->withQueryString();
+        $items = $query->latest('started_at')->customPaginate()->withQueryString();
 
         return view('noc.operational.network_incident', [
             'items' => $items,
@@ -75,7 +75,7 @@ class NocOperationalController extends Controller implements HasMiddleware
             $query->where('status', $status);
         }
 
-        $items = $query->latest('created_at')->paginate(30)->withQueryString();
+        $items = $query->latest('created_at')->customPaginate()->withQueryString();
 
         return view('noc.operational.network_diagnostic', [
             'items' => $items,
@@ -89,7 +89,7 @@ class NocOperationalController extends Controller implements HasMiddleware
         $user = $request->user();
         $query = NetworkDiagnostic::query()->forUserArea($user);
 
-        $items = $query->latest('created_at')->paginate(30)->withQueryString();
+        $items = $query->latest('created_at')->customPaginate()->withQueryString();
 
         return view('noc.operational.diagnostic_logs', [
             'items' => $items,

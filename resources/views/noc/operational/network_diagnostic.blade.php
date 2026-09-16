@@ -44,7 +44,7 @@
             </div>
         </div>
         <div class="card-footer">
-            {{ $items->links() }}
+            {{ $items->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

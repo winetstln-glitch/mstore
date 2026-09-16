@@ -27,7 +27,7 @@ class WeddingGalleryController extends Controller implements HasMiddleware
         $items = WeddingGalleryItem::query()
             ->orderBy('sort_order')
             ->latest('id')
-            ->paginate(20);
+            ->customPaginate();
 
         return view('wedding.gallery.index', compact('items'));
     }

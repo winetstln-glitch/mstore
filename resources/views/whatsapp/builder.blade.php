@@ -90,7 +90,7 @@
                 </table>
             </div>
 
-            {{ $menus->links() }}
+            {{ $menus->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

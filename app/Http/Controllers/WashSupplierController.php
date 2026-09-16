@@ -19,7 +19,7 @@ class WashSupplierController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $suppliers = WashSupplier::orderBy('name')->paginate(20);
+        $suppliers = WashSupplier::orderBy('name')->customPaginate();
         return view('wash.suppliers.index', compact('suppliers'));
     }
 

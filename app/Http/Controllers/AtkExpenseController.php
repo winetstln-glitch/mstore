@@ -33,7 +33,7 @@ class AtkExpenseController extends Controller implements HasMiddleware
     {
         $expenses = $this->queryAtkExpenses()
             ->latest('transaction_date')
-            ->paginate(15);
+            ->customPaginate();
 
         return view('atk.expenses.index', compact('expenses'));
     }

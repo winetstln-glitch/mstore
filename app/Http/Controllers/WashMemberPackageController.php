@@ -35,7 +35,7 @@ class WashMemberPackageController extends Controller implements HasMiddleware
             }
         }
 
-        $packages = $query->orderBy('sort_order')->orderBy('id')->paginate(50);
+        $packages = $query->orderBy('sort_order')->orderBy('id')->customPaginate();
 
         return view('wash.member-packages.index', compact('packages'));
     }

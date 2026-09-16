@@ -64,7 +64,7 @@ class EmployeeController extends Controller implements HasMiddleware
                 $query->where('employment_status', $status);
             })
             ->latest()
-            ->paginate(15)
+            ->customPaginate()
             ->withQueryString();
 
         $employees = $query;

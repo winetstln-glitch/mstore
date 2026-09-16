@@ -36,7 +36,7 @@ class WashLoyaltyController extends Controller implements HasMiddleware
                     });
             })
             ->orderByDesc('last_paid_at')
-            ->paginate(20)
+            ->customPaginate()
             ->appends($request->query());
 
         $target = $loyalty->target();
@@ -88,7 +88,7 @@ class WashLoyaltyController extends Controller implements HasMiddleware
                     });
             })
             ->orderByDesc('id')
-            ->paginate(20)
+            ->customPaginate()
             ->appends($request->query());
 
         return view('wash.loyalty.vouchers', compact('vouchers', 'status', 'q'));
@@ -126,7 +126,7 @@ class WashLoyaltyController extends Controller implements HasMiddleware
                 });
             })
             ->orderByDesc('id')
-            ->paginate(20)
+            ->customPaginate()
             ->appends($request->query());
 
         return view('wash.loyalty.redemptions', compact('redemptions', 'q'));

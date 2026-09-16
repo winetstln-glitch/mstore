@@ -23,7 +23,7 @@ class InstallationController extends Controller
             $query->where('technician_id', $request->input('technician_id'));
         }
 
-        return response()->json($query->latest()->paginate(15));
+        return response()->json($query->latest()->customPaginate());
     }
 
     /**

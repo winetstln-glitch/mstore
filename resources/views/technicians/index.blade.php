@@ -98,7 +98,7 @@
                 </div>
                 
                 <div class="mt-4">
-                    {{ $technicians->links() }}
+                    {{ $technicians->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

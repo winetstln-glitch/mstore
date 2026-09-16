@@ -92,7 +92,7 @@ class RouterController extends Controller implements HasMiddleware
             'active_routers' => (clone $query)->where('is_active', true)->count(),
         ];
 
-        $routers = $query->latest()->paginate(10)->withQueryString();
+        $routers = $query->latest()->customPaginate()->withQueryString();
 
         return view('routers.index', compact('routers', 'stats', 'isSuperAdmin'))
             ->with('scopeRegion', $user?->coordinator?->region)

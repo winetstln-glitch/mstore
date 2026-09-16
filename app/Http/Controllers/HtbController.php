@@ -40,7 +40,7 @@ class HtbController extends Controller implements HasMiddleware
             });
         }
 
-        $htbs = $query->latest()->paginate(10)->withQueryString();
+        $htbs = $query->latest()->customPaginate()->withQueryString();
 
         return view('htbs.index', compact('htbs', 'isSuperAdmin'))
             ->with('scopeRegion', $user?->coordinator?->region)

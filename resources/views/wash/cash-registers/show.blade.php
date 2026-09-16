@@ -91,7 +91,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $movements->links() }}
+            {{ $movements->appends(request()->query())->links() }}
             @else
             <p class="text-center text-muted">Belum ada mutasi kas</p>
             @endif

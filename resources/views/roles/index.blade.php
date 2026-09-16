@@ -132,7 +132,7 @@
                     </table>
                 </div>
                 <div class="mt-4">
-                    {{ $roles->links() }}
+                    {{ $roles->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

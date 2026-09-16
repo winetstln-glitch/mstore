@@ -248,7 +248,7 @@
                 <!-- Pagination -->
                 @if($customers instanceof \Illuminate\Pagination\LengthAwarePaginator)
                 <div class="mt-4 d-flex justify-content-center">
-                    {{ $customers->links() }}
+                    {{ $customers->appends(request()->query())->links() }}
                 </div>
                 @endif
             </div>

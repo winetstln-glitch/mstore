@@ -41,7 +41,7 @@ class AssetController extends Controller implements HasMiddleware
             $item = null;
         }
 
-        $assets = $query->latest()->paginate(10);
+        $assets = $query->latest()->customPaginate();
         $items = InventoryItem::all(); // For filters or creation
         $users = User::orderBy('name')->get(); // For assignment modal
 

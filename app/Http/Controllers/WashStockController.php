@@ -20,7 +20,7 @@ class WashStockController extends Controller implements HasMiddleware
     }
     public function index()
     {
-        $items = WashStockItem::orderBy('name')->paginate(20);
+        $items = WashStockItem::orderBy('name')->customPaginate();
         return view('wash.stock.index', compact('items'));
     }
 
@@ -70,7 +70,7 @@ class WashStockController extends Controller implements HasMiddleware
 
     public function show(WashStockItem $stockItem)
     {
-        $movements = $stockItem->movements()->latest()->paginate(10);
+        $movements = $stockItem->movements()->latest()->customPaginate();
         return view('wash.stock.show', compact('stockItem', 'movements'));
     }
 

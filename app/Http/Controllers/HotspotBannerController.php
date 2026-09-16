@@ -34,7 +34,7 @@ class HotspotBannerController extends Controller implements HasMiddleware
             ->when($status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->ordered()
-            ->paginate(20)
+            ->customPaginate()
             ->withQueryString();
 
         return view('hotspot.banners.index', compact('banners', 'search', 'pageTarget', 'status'));

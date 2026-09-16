@@ -138,7 +138,7 @@
                 </div>
                 
                 <div class="mt-3">
-                    {{ $odcs->links() }}
+                    {{ $odcs->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

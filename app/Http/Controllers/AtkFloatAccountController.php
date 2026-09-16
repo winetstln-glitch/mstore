@@ -22,7 +22,7 @@ class AtkFloatAccountController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $accounts = AtkFloatAccount::latest()->paginate(15);
+        $accounts = AtkFloatAccount::latest()->customPaginate();
         return view('atk.float-accounts.index', compact('accounts'));
     }
 
@@ -49,7 +49,7 @@ class AtkFloatAccountController extends Controller implements HasMiddleware
 
     public function show(AtkFloatAccount $account)
     {
-        $transactions = $account->transactions()->whereNull('reversed_at')->latest()->paginate(15);
+        $transactions = $account->transactions()->whereNull('reversed_at')->latest()->customPaginate();
         return view('atk.float-accounts.show', compact('account', 'transactions'));
     }
 

@@ -51,7 +51,7 @@
             </table>
         </div>
         <div class="card-body">
-            {{ $servers->links() }}
+            {{ $servers->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

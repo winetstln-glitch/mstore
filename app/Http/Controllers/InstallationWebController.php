@@ -59,7 +59,7 @@ class InstallationWebController extends Controller implements HasMiddleware
             $query->whereDate('plan_date', $request->input('date'));
         }
 
-        $installations = $query->latest()->paginate(10)->withQueryString();
+        $installations = $query->latest()->customPaginate()->withQueryString();
         $technicians = User::whereHas('role', function($q) { $q->where('name', 'field-technician'); })->get();
         $coordinators = Coordinator::orderBy('name')->get(['id', 'name']);
         $ticketCoordinatorsByCustomer = $this->ticketCoordinatorsByCustomer($installations->pluck('customer_id')->filter()->unique()->values()->all());

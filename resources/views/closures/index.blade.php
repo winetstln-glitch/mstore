@@ -150,7 +150,7 @@
                     </table>
                 </div>
                 <div class="mt-4">
-                    {{ $closures->links() }}
+                    {{ $closures->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

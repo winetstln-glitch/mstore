@@ -195,7 +195,7 @@
     </div>
     @if($employees->hasPages())
         <div class="card-footer bg-white py-2 border-0">
-            {{ $employees->links() }}
+            {{ $employees->appends(request()->query())->links() }}
         </div>
     @endif
 </div>

@@ -96,7 +96,7 @@ class CustomerWebController extends Controller implements HasMiddleware
 
         $perPage = $request->input('per_page', 10);
         if ($perPage === 'all') {
-            $customers = $query->latest()->paginate(10000)->withQueryString();
+            $customers = $query->latest()->customPaginate()->withQueryString();
         } else {
             $customers = $query->latest()->paginate((int) $perPage)->withQueryString();
         }

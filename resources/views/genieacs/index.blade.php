@@ -551,7 +551,7 @@
                 </div>
                 
                 <div class="d-flex justify-content-center mt-4">
-                    {{ $devices->links() }}
+                    {{ $devices->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

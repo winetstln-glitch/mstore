@@ -186,7 +186,7 @@
                 <!-- Pagination -->
                 @if($tickets instanceof \Illuminate\Pagination\LengthAwarePaginator)
                 <div class="mt-4">
-                    {{ $tickets->links() }}
+                    {{ $tickets->appends(request()->query())->links() }}
                 </div>
                 @endif
             </div>

@@ -153,7 +153,7 @@
         </div>
         @if($banners->hasPages())
             <div class="card-footer border-top bg-white py-3">
-                {{ $banners->links() }}
+                {{ $banners->appends(request()->query())->links() }}
             </div>
         @endif
     </div>

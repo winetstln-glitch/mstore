@@ -98,7 +98,7 @@
             </div>
 
             <div class="mt-3">
-                {{ $members->links() }}
+                {{ $members->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

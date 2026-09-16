@@ -54,7 +54,7 @@ class AdminDashboardController extends Controller
         $modelType = $request->input('model_type');
 
         $logs = $this->auditLogService->getAuditLogsQuery($userId, $action, $modelType)
-            ->paginate(20);
+            ->customPaginate();
 
         $users = User::whereHas('role', function ($q) {
             $q->whereNotIn('name', ['customer', 'partner']);

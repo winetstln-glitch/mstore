@@ -70,7 +70,7 @@
             </div>
 
             <div class="mt-3">
-                {{ $counters->links() }}
+                {{ $counters->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

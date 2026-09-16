@@ -90,7 +90,7 @@ class TicketWebController extends Controller implements HasMiddleware
             });
         }
 
-        $tickets = $query->latest()->paginate(10)->withQueryString();
+        $tickets = $query->latest()->customPaginate()->withQueryString();
 
         return view('tickets.index', compact('tickets'));
     }

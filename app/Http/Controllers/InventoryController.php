@@ -104,7 +104,7 @@ class InventoryController extends Controller implements HasMiddleware
         // Transaction History (Stock Movements: in/out)
         $transactions = $this->buildMovementQuery($request)
             ->latest()
-            ->paginate(10)
+            ->customPaginate()
             ->withQueryString();
 
         // My Assigned Assets (For Technicians/Coordinators)

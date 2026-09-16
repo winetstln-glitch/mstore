@@ -54,7 +54,7 @@
             </div>
 
             <div class="mt-3">
-                {{ $redemptions->links() }}
+                {{ $redemptions->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

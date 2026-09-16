@@ -45,7 +45,7 @@ class OdpController extends Controller implements HasMiddleware
             });
         }
 
-        $odps = $query->latest()->paginate(10)->withQueryString();
+        $odps = $query->latest()->customPaginate()->withQueryString();
         $regions = $isSuperAdmin ? Region::orderBy('name')->get() : null;
 
         return view('odps.index', compact('odps', 'regions', 'isSuperAdmin'))

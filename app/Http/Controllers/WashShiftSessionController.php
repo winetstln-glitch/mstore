@@ -25,7 +25,7 @@ class WashShiftSessionController extends Controller implements HasMiddleware
     {
         $sessions = WashShiftSession::with('shift', 'user', 'cashRegister')
             ->latest('opened_at')
-            ->paginate(20);
+            ->customPaginate();
         return view('wash.shift-sessions.index', compact('sessions'));
     }
 

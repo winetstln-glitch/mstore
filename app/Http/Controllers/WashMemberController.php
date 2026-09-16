@@ -43,7 +43,7 @@ class WashMemberController extends Controller implements HasMiddleware
             })
             ->orderByDesc('last_transaction_at')
             ->orderByDesc('id')
-            ->paginate(20)
+            ->customPaginate()
             ->appends($request->query());
 
         $levels = WashMemberLevel::query()->where('is_active', true)->orderBy('min_transactions')->get();

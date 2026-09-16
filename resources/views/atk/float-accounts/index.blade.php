@@ -68,7 +68,7 @@
                 </table>
             </div>
             <div class="mt-3">
-                {{ $accounts->links() }}
+                {{ $accounts->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

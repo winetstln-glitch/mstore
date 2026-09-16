@@ -103,7 +103,7 @@
                     </table>
                 </div>
 
-                {{ $customers->links() }}
+                {{ $customers->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

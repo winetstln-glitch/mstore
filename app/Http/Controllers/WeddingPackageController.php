@@ -24,7 +24,7 @@ class WeddingPackageController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $packages = WeddingPackage::query()->latest()->paginate(20);
+        $packages = WeddingPackage::query()->latest()->customPaginate();
         return view('wedding.packages.index', compact('packages'));
     }
 

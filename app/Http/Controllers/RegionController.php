@@ -24,7 +24,7 @@ class RegionController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $regions = Region::withCount(['coordinators', 'odps'])->latest()->paginate(10);
+        $regions = Region::withCount(['coordinators', 'odps'])->latest()->customPaginate();
 
         return view('regions.index', compact('regions'));
     }

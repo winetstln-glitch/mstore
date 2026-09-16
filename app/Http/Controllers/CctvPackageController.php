@@ -24,7 +24,7 @@ class CctvPackageController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $packages = CctvPackage::query()->latest()->paginate(20);
+        $packages = CctvPackage::query()->latest()->customPaginate();
         return view('cctv.packages.index', compact('packages'));
     }
 

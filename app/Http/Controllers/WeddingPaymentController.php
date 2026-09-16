@@ -29,7 +29,7 @@ class WeddingPaymentController extends Controller implements HasMiddleware
         $payments = WeddingPayment::query()
             ->with(['booking.package', 'paymentTransaction'])
             ->latest()
-            ->paginate(20);
+            ->customPaginate();
 
         return view('wedding.payments.index', compact('payments'));
     }

@@ -21,7 +21,7 @@ class VpnServerController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $servers = VpnServer::orderBy('location')->orderBy('name')->paginate(20);
+        $servers = VpnServer::orderBy('location')->orderBy('name')->customPaginate();
 
         return view('vpn.servers.index', compact('servers'));
     }

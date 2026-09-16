@@ -13,7 +13,7 @@ class AtkCashRegisterController extends Controller
 {
     public function index()
     {
-        $registers = AtkCashRegister::with('user')->latest()->paginate(20);
+        $registers = AtkCashRegister::with('user')->latest()->customPaginate();
         $activeRegister = AtkCashRegister::where('user_id', Auth::id())->where('status', 'open')->latest()->first();
         return view('atk.cash-registers.index', compact('registers', 'activeRegister'));
     }

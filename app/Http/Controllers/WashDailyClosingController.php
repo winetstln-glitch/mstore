@@ -24,7 +24,7 @@ class WashDailyClosingController extends Controller implements HasMiddleware
     {
         $closings = WashDailyClosing::with('closedBy', 'approvedBy')
             ->latest('closing_date')
-            ->paginate(20);
+            ->customPaginate();
         return view('wash.daily-closings.index', compact('closings'));
     }
 

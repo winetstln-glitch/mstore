@@ -89,7 +89,7 @@
             </div>
             @if($coordinators->hasPages())
                 <div class="card-footer py-3">
-                    {{ $coordinators->links() }}
+                    {{ $coordinators->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

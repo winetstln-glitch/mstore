@@ -182,7 +182,7 @@
                 </tbody>
             </table>
         </div>
-        {{ $vouchers->links() }}
+        {{ $vouchers->appends(request()->query())->links() }}
     </div>
 </div>
 

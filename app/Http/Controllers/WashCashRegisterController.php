@@ -19,7 +19,7 @@ class WashCashRegisterController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $registers = WashCashRegister::orderBy('name')->paginate(20);
+        $registers = WashCashRegister::orderBy('name')->customPaginate();
         return view('wash.cash-registers.index', compact('registers'));
     }
 
@@ -49,7 +49,7 @@ class WashCashRegisterController extends Controller implements HasMiddleware
 
     public function show(WashCashRegister $register)
     {
-        $movements = $register->cashMovements()->latest('movement_date')->paginate(20);
+        $movements = $register->cashMovements()->latest('movement_date')->customPaginate();
         $sessions = $register->sessions()->latest('opened_at')->limit(10)->get();
         return view('wash.cash-registers.show', compact('register', 'movements', 'sessions'));
     }

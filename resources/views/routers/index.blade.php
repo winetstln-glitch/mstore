@@ -170,7 +170,7 @@
         </div>
         @if($routers instanceof \Illuminate\Pagination\AbstractPaginator)
             <div class="card-footer ">
-                {{ $routers->links() }}
+                {{ $routers->appends(request()->query())->links() }}
             </div>
         @endif
     </div>

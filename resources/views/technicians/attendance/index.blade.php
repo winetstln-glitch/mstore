@@ -347,7 +347,7 @@
                 </div>
                 
                 <div class="mt-4">
-                    {{ $attendances->links() }}
+                    {{ $attendances->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

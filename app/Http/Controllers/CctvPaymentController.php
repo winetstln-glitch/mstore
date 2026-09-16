@@ -29,7 +29,7 @@ class CctvPaymentController extends Controller implements HasMiddleware
         $payments = CctvPayment::query()
             ->with(['booking.package', 'paymentTransaction'])
             ->latest()
-            ->paginate(20);
+            ->customPaginate();
 
         return view('cctv.payments.index', compact('payments'));
     }

@@ -160,7 +160,7 @@
 
                 {{-- Pagination --}}
                 <div class="mt-4">
-                    {{ $logs->links() }}
+                    {{ $logs->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

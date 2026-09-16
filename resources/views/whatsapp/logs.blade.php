@@ -173,7 +173,7 @@
                 <!-- Pagination -->
                 @if($logs->hasPages())
                     <div class="bg-white border-top px-4 py-3">
-                        {{ $logs->links() }}
+                        {{ $logs->appends(request()->query())->links() }}
                     </div>
                 @endif
                 

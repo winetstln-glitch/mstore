@@ -120,7 +120,7 @@
                 </div>
                 
                 <div class="mt-3">
-                    {{ $htbs->links() }}
+                    {{ $htbs->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>

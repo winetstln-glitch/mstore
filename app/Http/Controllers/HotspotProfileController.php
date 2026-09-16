@@ -38,7 +38,7 @@ class HotspotProfileController extends Controller implements HasMiddleware
             }
         }
 
-        $packages = $query->orderBy('sort_order')->orderBy('id')->paginate(50);
+        $packages = $query->orderBy('sort_order')->orderBy('id')->customPaginate();
         $routers = Router::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         return view('hotspot.profiles.index', compact('packages', 'routers'));

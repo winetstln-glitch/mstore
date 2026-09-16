@@ -40,7 +40,7 @@ class WeddingBookingController extends Controller implements HasMiddleware
             $query->where('status', (string) $request->status);
         }
 
-        $bookings = $query->paginate(20)->withQueryString();
+        $bookings = $query->customPaginate()->withQueryString();
 
         return view('wedding.bookings.index', compact('bookings'));
     }
