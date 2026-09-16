@@ -546,7 +546,11 @@ class UserController extends Controller implements HasMiddleware
 
     private function hasAttendanceCardColumn(): bool
     {
-        return true;
+        static $hasColumn = null;
+        if ($hasColumn === null) {
+            $hasColumn = \Illuminate\Support\Facades\Schema::hasColumn('users', 'attendance_card_code');
+        }
+        return $hasColumn;
     }
 
     private function buildUsernameFromName(string $name, ?string $fallbackEmail = null, ?int $ignoreId = null): string
