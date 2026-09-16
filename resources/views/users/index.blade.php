@@ -9,22 +9,13 @@
             <h4 class="fw-bold text-primary mb-1">{{ __('Manajemen Pengguna') }}</h4>
             <p class="text-muted small mb-0">{{ __('Kelola pengguna sistem dan perannya.') }}</p>
         </div>
-        <div class="d-flex flex-column flex-xl-row gap-2 w-100 justify-content-xl-end align-items-stretch align-items-xl-center">
-            <x-table-toolbar 
-                :route="route('users.index')" 
-                searchPlaceholder="Cari pengguna..." 
-                :showRoleFilter="true" 
-                :roles="$roles ?? collect()" 
-            />
-
-            <div class="d-flex flex-wrap gap-2 w-100 w-xl-auto">
-                <a href="{{ route('users.export', request()->query()) }}" class="btn btn-sm btn-outline-success text-nowrap flex-fill flex-sm-grow-0">
-                    <i class="fa-solid fa-file-excel me-1"></i> {{ __('Ekspor Excel') }}
-                </a>
-                <a href="{{ route('users.create') }}" class="btn btn-sm btn-outline-primary text-nowrap flex-fill flex-sm-grow-0">
-                    <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Pengguna Baru') }}
-                </a>
-            </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('users.export', request()->query()) }}" class="btn btn-sm btn-outline-success text-nowrap">
+                <i class="fa-solid fa-file-excel me-1"></i> {{ __('Ekspor Excel') }}
+            </a>
+            <a href="{{ route('users.create') }}" class="btn btn-sm btn-outline-primary text-nowrap">
+                <i class="fa-solid fa-plus me-1"></i> {{ __('Tambah Pengguna Baru') }}
+            </a>
         </div>
     </div>
 </div>
@@ -32,7 +23,15 @@
 <div class="row">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
-            <div class="card-body">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <x-table-toolbar 
+                    :route="route('users.index')" 
+                    searchPlaceholder="Cari pengguna..." 
+                    :showRoleFilter="true" 
+                    :roles="$roles ?? collect()" 
+                />
+            </div>
+            <div class="card-body pt-0">
                 {{-- Alerts handled by SweetAlert in Layout --}}
 
                 <div class="table-responsive">

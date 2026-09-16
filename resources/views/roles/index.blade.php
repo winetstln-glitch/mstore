@@ -9,17 +9,20 @@
             <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold">{{ __('Role Management') }}</h5>
                 <div class="d-flex gap-2 flex-wrap">
-                    <x-table-toolbar 
-                        :route="route('roles.index')" 
-                        searchPlaceholder="Search roles..." 
-                    />
                     <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-plus me-1"></i> {{ __('Create New Role') }}
                     </a>
                 </div>
             </div>
+            
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <x-table-toolbar 
+                    :route="route('roles.index')" 
+                    searchPlaceholder="Search roles..." 
+                />
+            </div>
 
-            <div class="card-body">
+            <div class="card-body pt-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
