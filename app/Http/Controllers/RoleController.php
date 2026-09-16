@@ -60,7 +60,15 @@ class RoleController extends Controller implements HasMiddleware
                     $systemNames
                 );
             })
-            ->paginate(10)
+            ->when(true, function ($query) {
+                $perPage = request()->input('per_page', 10);
+                if ($perPage === 'all') {
+                    $perPage = $query->count() > 0 ? $query->count() : 1;
+                } else {
+                    $perPage = (int) $perPage;
+                }
+                return $query->paginate($perPage);
+            })
             ->appends(request()->query());
 
         return view('roles.index', compact('roles'));

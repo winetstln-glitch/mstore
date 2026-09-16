@@ -19,11 +19,18 @@
                             <button type="submit" class="btn btn-outline-primary">
                                 <i class="fa-solid fa-search"></i>
                             </button>
-                            @if(request('search'))
+                            @if(request('search') || request('per_page'))
                                 <a href="{{ route('roles.index') }}" class="btn btn-outline-secondary">
                                     <i class="fa-solid fa-times"></i>
                                 </a>
                             @endif
+                            <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()" style="max-width: 100px;">
+                                <option value="10" @selected(request('per_page') == '10' || !request()->has('per_page'))>10 Data</option>
+                                <option value="20" @selected(request('per_page') == '20')>20 Data</option>
+                                <option value="50" @selected(request('per_page') == '50')>50 Data</option>
+                                <option value="100" @selected(request('per_page') == '100')>100 Data</option>
+                                <option value="all" @selected(request('per_page') == 'all')>Semua</option>
+                            </select>
                         </div>
                     </form>
                     <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm">
