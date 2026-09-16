@@ -15,11 +15,20 @@
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Cari pengguna...') }}" value="{{ request('search') }}">
                 </div>
                 <div class="col-12 col-sm-6 col-lg-auto">
-                    <select name="role_id" class="form-select form-select-sm">
+                    <select name="role_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">{{ __('Semua Peran') }}</option>
                         @foreach(($roles ?? collect()) as $role)
                             <option value="{{ $role->id }}" @selected((string) request('role_id') === (string) $role->id)>{{ $role->label }}</option>
                         @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-auto">
+                    <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="10" @selected(request('per_page') == '10' || !request()->has('per_page'))>10 Data</option>
+                        <option value="20" @selected(request('per_page') == '20')>20 Data</option>
+                        <option value="50" @selected(request('per_page') == '50')>50 Data</option>
+                        <option value="100" @selected(request('per_page') == '100')>100 Data</option>
+                        <option value="all" @selected(request('per_page') == 'all')>Semua</option>
                     </select>
                 </div>
                 <div class="col-6 col-sm-auto d-grid">
@@ -27,7 +36,7 @@
                         <i class="fa-solid fa-search me-1"></i>{{ __('Cari') }}
                     </button>
                 </div>
-                @if(request()->filled('search') || request()->filled('role_id'))
+                @if(request()->filled('search') || request()->filled('role_id') || request()->filled('per_page'))
                     <div class="col-6 col-sm-auto d-grid">
                         <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
                             <i class="fa-solid fa-rotate-left me-1"></i>{{ __('Reset') }}

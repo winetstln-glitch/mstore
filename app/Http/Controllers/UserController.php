@@ -62,7 +62,16 @@ class UserController extends Controller implements HasMiddleware
             $query->where('role_id', $request->integer('role_id'));
         }
 
-        $users = $query->paginate(10)->withQueryString();
+        $perPage = $request->input('per_page', 10);
+        
+        if ($perPage === 'all') {
+            // Use count or large number for 'all'
+            $perPage = $query->count() > 0 ? $query->count() : 1;
+        } else {
+            $perPage = (int) $perPage;
+        }
+
+        $users = $query->paginate($perPage)->withQueryString();
         $roles = Role::orderBy('label')->get();
 
         return view('users.index', compact('users', 'roles'));
