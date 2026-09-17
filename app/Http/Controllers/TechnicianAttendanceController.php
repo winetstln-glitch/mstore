@@ -106,6 +106,10 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
             ->with('role')
             ->orderBy('name');
 
+        if (!$this->attendanceService->canViewAllAttendanceData($user)) {
+            $usersQuery->where('id', Auth::id());
+        }
+
         if ($search) {
             $usersQuery->where('name', 'LIKE', "%{$search}%")
                 ->orWhere('username', 'LIKE', "%{$search}%")
@@ -243,12 +247,16 @@ class TechnicianAttendanceController extends Controller implements HasMiddleware
                 [$startDate, $endDate] = [$endDate, $startDate];
             }
 
-            $users = \App\Models\User::whereHas('role', function ($q) {
+            $usersQuery = \App\Models\User::whereHas('role', function ($q) {
                 $q->whereNotIn('name', ['customer', 'partner', 'super-admin', 'manager', 'field-leader']);
             })->where('is_active', true)
                 ->with('role')
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+                
+            if (!$this->attendanceService->canViewAllAttendanceData($user)) {
+                $usersQuery->where('id', Auth::id());
+            }
+            $users = $usersQuery->get();
 
             $attendancesQuery = TechnicianAttendance::whereBetween('clock_in', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                 ->orWhereBetween('work_date', [$startDate, $endDate])
