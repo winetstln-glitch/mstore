@@ -86,7 +86,7 @@ class DashboardController extends Controller
             }
             
             // Jika user adalah kasir wash / karyawan wash, arahkan ke dashboard wash
-            if ($user->hasRole('kasir-wash') || $user->hasRole('wash-cashier') || $user->hasRole('karyawan-wash') || $user->hasRole('wash-operator')) {
+            if ($user->hasRole('kasir-wash') || $user->hasRole('wash-cashier') || $user->hasRole('wash-operator') || $user->hasRole('wash-operator')) {
                 return redirect()->route('wash.dashboard');
             }
             
@@ -112,7 +112,7 @@ class DashboardController extends Controller
             ->whereDate('clock_in', today())
             ->first();
 
-        if ($user->hasAnyRole(['technician', 'karyawan-wash'])) {
+        if ($user->hasAnyRole(['field-technician', 'wash-operator'])) {
             $attendanceOverview = $this->buildRoleAttendanceOverview($user->role->name);
             $shiftSchedule = $this->getTodayShiftSchedule($user->id);
             $stats = [
@@ -187,7 +187,7 @@ class DashboardController extends Controller
             return User::query()
                 ->where('is_active', true)
                 ->whereHas('role', function ($q) {
-                    $q->where('name', 'technician');
+                    $q->where('name', 'field-technician');
                 })
                 ->pluck('id')
                 ->all();
@@ -196,7 +196,7 @@ class DashboardController extends Controller
             return User::query()
                 ->where('is_active', true)
                 ->whereHas('role', function ($q) {
-                    $q->where('name', 'karyawan-wash');
+                    $q->where('name', 'wash-operator');
                 })
                 ->pluck('id')
                 ->all();
@@ -217,9 +217,9 @@ class DashboardController extends Controller
             ->distinct('user_id')
             ->count('user_id');
 
-        $attendanceRole = (string) $request->query('attendance_role', 'technician');
-        if (! in_array($attendanceRole, ['technician', 'karyawan-wash'], true)) {
-            $attendanceRole = 'technician';
+        $attendanceRole = (string) $request->query('attendance_role', 'field-technician');
+        if (! in_array($attendanceRole, ['field-technician', 'wash-operator'], true)) {
+            $attendanceRole = 'field-technician';
         }
         $attendanceState = (string) $request->query('attendance_state', 'present');
         if (! in_array($attendanceState, ['present', 'not_present'], true)) {
@@ -237,7 +237,7 @@ class DashboardController extends Controller
             $attendanceDate = now()->toDateString();
         }
         $attendanceDateLabel = $attendanceDateStart->translatedFormat('d M Y');
-        $selectedRoleIds = $attendanceRole === 'karyawan-wash' ? $washEmployeeIds : $technicianIds;
+        $selectedRoleIds = $attendanceRole === 'wash-operator' ? $washEmployeeIds : $technicianIds;
         $attendanceByUser = TechnicianAttendance::query()
             ->where('clock_in', '>=', $attendanceDateStart)
             ->where('clock_in', '<=', $attendanceDateEnd)
@@ -274,7 +274,7 @@ class DashboardController extends Controller
                 ->get();
         }
         $technicianTaskSummary = collect();
-        if ($attendanceRole === 'technician' && $attendanceEmployees->isNotEmpty()) {
+        if ($attendanceRole === 'field-technician' && $attendanceEmployees->isNotEmpty()) {
             $technicianIdsForTable = $attendanceEmployees->pluck('id')->values()->all();
             $activeTicketRows = DB::table('ticket_user')
                 ->join('tickets', 'tickets.id', '=', 'ticket_user.ticket_id')
@@ -361,12 +361,12 @@ class DashboardController extends Controller
             $onlineTechnicians = User::query()
                 ->where('is_active', true)
                 ->where('last_seen_at', '>=', $presenceCutoff)
-                ->whereHas('role', fn ($query) => $query->where('name', 'technician'))
+                ->whereHas('role', fn ($query) => $query->where('name', 'field-technician'))
                 ->count();
             $onlineWashEmployees = User::query()
                 ->where('is_active', true)
                 ->where('last_seen_at', '>=', $presenceCutoff)
-                ->whereHas('role', fn ($query) => $query->where('name', 'karyawan-wash'))
+                ->whereHas('role', fn ($query) => $query->where('name', 'wash-operator'))
                 ->count();
 
             return [
@@ -419,7 +419,7 @@ class DashboardController extends Controller
             ->get();
 
         $upcomingInstallations = $installationQuery->clone()
-            ->with(['customer', 'technician'])
+            ->with(['customer', 'field-technician'])
             ->whereIn('status', ['registered', 'survey', 'approved', 'installation'])
             ->orderBy('plan_date', 'asc')
             ->take(5)
