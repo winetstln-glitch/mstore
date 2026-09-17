@@ -555,7 +555,7 @@ class TicketWebController extends Controller implements HasMiddleware
     {
         return User::query()
             ->whereHas('role', static function ($q) {
-                $q->where('name', 'technician');
+                $q->where('name', 'field-technician');
             })
             ->whereIn('id', function ($q) {
                 $q->select('ta.user_id')
