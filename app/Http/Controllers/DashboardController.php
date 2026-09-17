@@ -86,8 +86,10 @@ class DashboardController extends Controller
             }
             
             // Jika user adalah kasir wash / karyawan wash, arahkan ke dashboard wash
-            if ($user->hasRole('kasir-wash') || $user->hasRole('wash-cashier') || $user->hasRole('wash-operator') || $user->hasRole('wash-operator')) {
-                return redirect()->route('wash.dashboard');
+            if ($user->hasRole('kasir-wash') || $user->hasRole('wash-cashier') || $user->hasRole('karyawan-wash') || $user->hasRole('wash-operator')) {
+                if ($user->hasPermission('wash.view')) {
+                    return redirect()->route('wash.dashboard');
+                }
             }
             
             // Jika user adalah kasir ATK, arahkan ke dashboard ATK
