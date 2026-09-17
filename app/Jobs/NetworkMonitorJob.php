@@ -47,7 +47,8 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
         $this->notifyConfig = $this->loadNotifyConfig();
 
         Customer::query()
-            ->select(['id', 'name', 'phone', 'address', 'package', 'pppoe_user', 'status', 'onu_serial', 'genieacs_device_id', 'created_at'])
+            ->with('package')
+            ->select(['id', 'name', 'phone', 'address', 'package_id', 'pppoe_user', 'status', 'onu_serial', 'genieacs_device_id', 'created_at'])
             ->where('status', 'active')
             ->where(function($q) {
                 $q->whereNotNull('onu_serial')->orWhereNotNull('genieacs_device_id');
@@ -116,7 +117,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     'customer_id' => (string) $customer->id,
                     'customer_phone' => (string) ($customer->phone ?: '-'),
                     'customer_address' => (string) ($customer->address ?: '-'),
-                    'customer_package' => (string) ($customer->package ?: '-'),
+                    'customer_package' => (string) ($customer->package->name ?? '-'),
                     'customer_pppoe_user' => (string) ($customer->pppoe_user ?: '-'),
                     'customer_status' => (string) ($customer->status ?: '-'),
                     'onu_serial' => (string) $customer->onu_serial,
@@ -162,7 +163,7 @@ class NetworkMonitorJob implements ShouldBeUnique, ShouldQueue
                     'customer_id' => (string) $customer->id,
                     'customer_phone' => (string) ($customer->phone ?: '-'),
                     'customer_address' => (string) ($customer->address ?: '-'),
-                    'customer_package' => (string) ($customer->package ?: '-'),
+                    'customer_package' => (string) ($customer->package->name ?? '-'),
                     'customer_pppoe_user' => (string) ($customer->pppoe_user ?: '-'),
                     'customer_status' => (string) ($customer->status ?: '-'),
                     'onu_serial' => (string) $customer->onu_serial,
