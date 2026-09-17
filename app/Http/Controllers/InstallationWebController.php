@@ -176,7 +176,7 @@ class InstallationWebController extends Controller implements HasMiddleware
             return collect();
         }
 
-        return Ticket::with('field-leader')
+        return Ticket::with('coordinator')
             ->whereIn('customer_id', $customerIds)
             ->where('type', 'pasang_baru')
             ->orderByDesc('id')
@@ -187,7 +187,7 @@ class InstallationWebController extends Controller implements HasMiddleware
 
     private function latestInstallationTicketCoordinator(int $customerId): ?Coordinator
     {
-        return Ticket::with('field-leader')
+        return Ticket::with('coordinator')
             ->where('customer_id', $customerId)
             ->where('type', 'pasang_baru')
             ->latest('id')
