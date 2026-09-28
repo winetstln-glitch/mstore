@@ -1,4 +1,4 @@
-C:\Users\Lenovo\.ssh\app-nms-deploy<?php
+<?php
 
 namespace App\Services;
 
@@ -19,12 +19,16 @@ class OutboxEventService
         $eventHash = $this->generateEventHash($aggregateType, $aggregateId, $eventType, $payload);
 
         $user = Auth::user();
+        $now = now();
         $attributes = [
             'aggregate_type' => $aggregateType,
             'aggregate_id' => $aggregateId,
             'event_type' => $eventType,
-            'payload' => $payload,
+            'payload' => is_array($payload) ? json_encode($payload) : $payload,
+            'event_hash' => $eventHash,
             'status' => 'pending',
+            'created_at' => $now,
+            'updated_at' => $now,
         ];
 
         if ($user && $user->company_id) {
@@ -35,21 +39,21 @@ class OutboxEventService
         }
 
         try {
-            return OutboxEvent::withoutGlobalScopes()->firstOrCreate(
-                ['event_hash' => $eventHash],
-                $attributes
-            );
+            DB::table('outbox_events')->insertOrIgnore($attributes);
         } catch (QueryException $e) {
             if (
-                $e->errorInfo[1] === 1062
-                && str_contains($e->getMessage(), 'outbox_events_event_hash_unique')
+                ! (
+                    $e->errorInfo[1] === 1062
+                    && str_contains($e->getMessage(), 'outbox_events_event_hash_unique')
+                )
             ) {
-                return OutboxEvent::withoutGlobalScopes()
-                    ->where('event_hash', $eventHash)
-                    ->firstOrFail();
+                throw $e;
             }
-            throw $e;
         }
+
+        return OutboxEvent::withoutGlobalScopes()
+            ->where('event_hash', $eventHash)
+            ->firstOrFail();
     }
 
     protected function generateEventHash(

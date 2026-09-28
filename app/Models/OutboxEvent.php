@@ -19,4 +19,18 @@ class OutboxEvent extends Model
         'payload' => 'array',
         'processed_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $event): void {
+            if (empty($event->event_hash)) {
+                $event->event_hash = hash('sha256', json_encode([
+                    'aggregate_type' => $event->aggregate_type,
+                    'aggregate_id' => (string) $event->aggregate_id,
+                    'event_type' => $event->event_type,
+                    'payload' => is_array($event->payload) ? $event->payload : json_decode($event->payload, true),
+                ]));
+            }
+        });
+    }
 }
